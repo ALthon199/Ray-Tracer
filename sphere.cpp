@@ -1,5 +1,6 @@
 #include "sphere.h"
-
+#include "vector.h"
+#include "hittable.h"
 
 
 Sphere::Sphere(Vec3 position, Vec3 color, float radius):
@@ -9,7 +10,7 @@ Sphere::Sphere(Vec3 position, Vec3 color, float radius):
 }
 
 // Returns the time t >= 0 of where the ray hits, returns -1 if doesnt hit
-float Sphere:: sphere_hit(const Ray& ray) const{
+void Sphere::hit(const Ray& ray, HitRecord& record) const{
 
     float a = ray.direction.dot(ray.direction);
 
@@ -18,16 +19,28 @@ float Sphere:: sphere_hit(const Ray& ray) const{
     float c = (ray.origin - position).dot(ray.origin - position) - radius * radius;
     
     float det = b * b - 4 * a * c;
-
+    // No hits
     if (det < 0){
-        return -1;
+        return;
     }
-
 
     float t1 = (-b + std::sqrt(det)) / (2 * a);
     float t2 = (-b - std::sqrt(det)) / (2 * a);
-    return t1 < t2 ? t1 : t2;
 
+    if (t1 < 0 && t2 < 0){
+        return;
+    }
+    float t = t1 < t2 ? t1 : t2;
+   
+    Vec3 P = ray.ray_at(t);
+    Vec3 normal = P - position;
+    Vec3 unit = normal.normalize();
+    if (record.time == -1 || t < record.time){
+        record.time = t;
+        record.normal = unit;
+        record.color = Vec3(color.x , color.y, color.z);
+    }
+    
 }
 
 Vec3 Sphere:: get_origin() const{
