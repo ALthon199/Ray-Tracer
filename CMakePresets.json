@@ -1,0 +1,27 @@
+  {
+    "version": 3,
+    "configurePresets": [
+      {
+        "name": "windows-msys2-clang",
+        "displayName": "Clang 64-bit + vcpkg",
+        "description": "Windows MSYS2 Clang with vcpkg package manager",
+        "generator": "Ninja",
+        "binaryDir": "${sourceDir}/build/${presetName}",
+        "toolchainFile": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "environment": {
+          "PATH": "C:/msys64/clang64/bin;C:/msys64/usr/bin;$ENV{PATH}"
+        },
+        "cacheVariables": {
+          "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+          "CMAKE_C_COMPILER": "C:/msys64/clang64/bin/clang.exe",
+          "CMAKE_CXX_COMPILER": "C:/msys64/clang64/bin/clang++.exe"
+        }
+      }
+    ],
+    "buildPresets": [
+      {
+        "name": "windows-msys2-clang",
+        "configurePreset": "windows-msys2-clang"
+      }
+    ]
+  }

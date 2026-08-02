@@ -3,6 +3,7 @@
 
 #include "vector.h"
 
+namespace rt{
 
 struct HitRecord {  
     float time;
@@ -16,4 +17,5 @@ class Hittable{
         virtual void hit(const Ray& ray, HitRecord& record) const = 0;
 };
 
+}
 #endif

@@ -4,7 +4,7 @@
 #include <cmath>
 #include <iostream>
 
-
+namespace rt{
 struct Vec3{
     float x, y, z;
 
@@ -53,7 +53,13 @@ struct Vec3{
     float dot(const Vec3& other) const{
         return (x * other.x + y * other.y + z * other.z);
     }
-
+    Vec3 cross(const Vec3& other) const{
+        return Vec3(
+            y * other.z - z * other.y,
+            z * other.x - x * other.z,
+            x * other.y - y * other.x
+        );
+    }
    
 
 
@@ -84,5 +90,5 @@ struct Ray{
     
 }; 
 
-
+}
 #endif

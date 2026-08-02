@@ -7,66 +7,124 @@
 #include "sphere.h"
 #include "vector.h"
 #include "hittable.h"
-
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 360
+#include "camera.h"
+#include <raylib.h>
+#include <raymath.h>
+#define WINDOW_WIDTH 320
+#define WINDOW_HEIGHT 180
 
 
 int main() {   
+    InitWindow(WINDOW_WIDTH * 4, WINDOW_HEIGHT * 4, "raylib example - basic window");
+    DisableCursor();
 
-    std::ofstream outFile("output.ppm");
 
-    if (!outFile.is_open()) {
-        std::cerr << "Error opening file!" << std::endl;
-        return 1;
-    }
+    std::vector<Color> pixels(WINDOW_WIDTH * WINDOW_HEIGHT);
+    Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
+    Texture2D texture = LoadTextureFromImage(canvas);
+    UnloadImage(canvas);
 
-    outFile << "P3\n" << WINDOW_WIDTH << "\n" << WINDOW_HEIGHT << "\n255\n";
-
+    rt::Vec3 global_up = rt::Vec3(0, 1, 0);
+    rt::Camera camera = rt::Camera();
+    
     float aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
   
-    float viewport_height = 2.0;
-    float viewport_width = 2.0 * aspect_ratio;
-    float viewport_depth = -1;
+    float viewport_height = 0.8;
+    float viewport_width = viewport_height * aspect_ratio;
+    float viewport_depth = 1;
 
-    Vec3 top_left = Vec3(-viewport_width/2, viewport_height/2, -1);
+    rt::Vec3 top_left = rt::Vec3(-viewport_width/2, viewport_height/2, -1);
     
     float viewport_dy = viewport_height/WINDOW_HEIGHT;
     float viewport_dx = viewport_width/WINDOW_WIDTH;
     int rays_hit = 0;
 
-    std::vector<std::unique_ptr<Hittable>> hit_list;
+    std::vector<std::unique_ptr<rt::Hittable>> hit_list;
 
-    hit_list.push_back(std::make_unique<Sphere>(Vec3(0, 1, -1), Vec3(255, 0, 0), 1.2));
-    hit_list.push_back(std::make_unique<Sphere>(Vec3(0, 1, -3), Vec3(0, 255, 0), 2));
-    hit_list.push_back(std::make_unique<Sphere>(Vec3(0, -200.5, 30), Vec3(100, 100, 100), 200));
+    hit_list.push_back(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), rt::Vec3(100, 100, 100), 198));
+    hit_list.push_back(std::make_unique<rt::Sphere>(rt::Vec3(0, -2, -5), rt::Vec3(255, 100, 100), 1));
+    hit_list.push_back(std::make_unique<rt::Sphere>(rt::Vec3(0, -3, -8), rt::Vec3(100, 255, 100), 3));
 
-    for (int y = 0; y < WINDOW_HEIGHT; y++){
-        for (int x = 0; x < WINDOW_WIDTH; x++){
-           
-            HitRecord record = {-1, Vec3(), Vec3()};
-            Vec3 direction = (top_left + Vec3(x * viewport_dx, -y * viewport_dy, viewport_depth)).normalize();
-           
-            Vec3 origin = Vec3(0.0f, 0.0f, 0.0f);
+    
+   
+    SetTargetFPS(30);
+    while (!WindowShouldClose())
+    {  
+        Vector2 mouse_delta = GetMouseDelta();
+        float length = Vector2Length(mouse_delta);
+        if (length > 0){
+            camera.update_pitch_yaw(-0.05 * mouse_delta.y/length, 0.05 * mouse_delta.x/length);
+        }
 
-            Ray camera_ray = Ray(origin, direction);
+       
+        rt::Vec3 forward = camera.get_forward_vector();
+        global_up = rt::Vec3(0, 1, 0);
+        rt::Vec3 right   = forward.cross(global_up).normalize();
+        rt::Vec3 up      = right.cross(forward).normalize();
+
+
+        if (IsKeyDown(KEY_RIGHT)){
+            camera.update_pos(right.x * 0.05, right.y * 0.05, right.z * 0.05);   
+        }
+
+        if (IsKeyDown(KEY_LEFT)){
+            camera.update_pos(-right.x * 0.05, -right.y * 0.05, -right.z * 0.05);
             
-            for (auto i = hit_list.begin(); i != hit_list.end(); ++i){
-                (*i) -> hit(camera_ray, record);
-            }
-            if (record.time == -1){
-                outFile << rgb_map(camera_ray.ray_color().x) << " " << rgb_map(camera_ray.ray_color().y)  <<  " " << rgb_map(camera_ray.ray_color().z) << "\n";
-            }
-            else{
-                outFile << (int)(record.color.x) << " " << (int)(record.color.y) << " " << int(record.color.z) << "\n"; 
+        }
+        if (IsKeyDown(KEY_UP)){
+            camera.update_pos(forward.x * 0.05, forward.y * 0.05, forward.z * 0.05);   
+        }
+
+        if (IsKeyDown(KEY_DOWN)){
+            camera.update_pos(-forward.x * 0.05, -forward.y * 0.05, -forward.z * 0.05);
+            
+        }
+
+        top_left = camera.get_position() + forward * viewport_depth + up * (viewport_height/2) - right * (viewport_width/2);
+
+        for (int y = 0; y < WINDOW_HEIGHT; y++){
+            for (int x = 0; x < WINDOW_WIDTH; x++){
+            
+                rt::HitRecord record = {-1, rt::Vec3(), rt::Vec3()};
+                rt::Vec3 direction = (top_left + right * ((x + 0.5)* viewport_dx) - up * ((y +0.5)* viewport_dy)) - camera.get_position();
+                rt::Ray camera_ray = rt::Ray(camera.get_position(), direction.normalize());
+                
+                for (auto i = hit_list.begin(); i != hit_list.end(); ++i){
+                    
+                    (*i) -> hit(camera_ray, record);
+                }
+                if (record.time == -1){
+                    unsigned char r = rt::rgb_map(camera_ray.ray_color().x);
+                    unsigned char g = rt::rgb_map(camera_ray.ray_color().y);
+                    unsigned char b = rt::rgb_map(camera_ray.ray_color().z);
+                    pixels[y * WINDOW_WIDTH + x] = Color{r, g, b, 255};
+                    
+                }
+                else{
+                    unsigned char r = static_cast<unsigned char>(record.color.x);
+                    unsigned char g =  static_cast<unsigned char>(record.color.y);
+                    unsigned char b = static_cast<unsigned char>(record.color.z);
+                    pixels[y * WINDOW_WIDTH + x] = Color{r, g, b, 255};
+                }
             }
         }
+        
+    
+
+        UpdateTexture(texture, pixels.data());
+        BeginDrawing();
+
+            ClearBackground(BLACK);
+         
+            
+            DrawTexturePro(texture, {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, {0, 0, 4 * WINDOW_WIDTH, 4 * WINDOW_HEIGHT}, {0,0}, 0.0f, WHITE);
+            DrawFPS(0, 0);
+        EndDrawing();
     }
 
+    CloseWindow();
     // Close the file
-    outFile.close();
-
-    std::cout << "Image successfully saved to output.ppm!\n" ;
+  
 
     return 0;
 }

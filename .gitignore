@@ -1,2 +1,5 @@
 *.exe
 *.ppm
+build/
+.vscode/
+vcpkg_installed/

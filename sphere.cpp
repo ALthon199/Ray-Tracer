@@ -2,7 +2,7 @@
 #include "vector.h"
 #include "hittable.h"
 
-
+using namespace rt;
 Sphere::Sphere(Vec3 position, Vec3 color, float radius):
     position(position), color(color), radius(radius)
 {
@@ -36,6 +36,7 @@ void Sphere::hit(const Ray& ray, HitRecord& record) const{
     Vec3 normal = P - position;
     Vec3 unit = normal.normalize();
     if (record.time == -1 || t < record.time){
+        
         record.time = t;
         record.normal = unit;
         record.color = Vec3(color.x , color.y, color.z);
