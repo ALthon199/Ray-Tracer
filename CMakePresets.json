@@ -9,12 +9,14 @@
         "binaryDir": "${sourceDir}/build/${presetName}",
         "toolchainFile": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "environment": {
-          "PATH": "C:/msys64/clang64/bin;C:/msys64/usr/bin;$ENV{PATH}"
+          "PATH": "C:/msys64/clang64/bin;C:/msys64/usr/bin;"
         },
         "cacheVariables": {
           "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
           "CMAKE_C_COMPILER": "C:/msys64/clang64/bin/clang.exe",
-          "CMAKE_CXX_COMPILER": "C:/msys64/clang64/bin/clang++.exe"
+          "CMAKE_CXX_COMPILER": "C:/msys64/clang64/bin/clang++.exe",
+          "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined"
+
         }
       }
     ],

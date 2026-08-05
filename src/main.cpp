@@ -4,28 +4,44 @@
 #include <cmath>
 #include <vector>
 #include <memory>
+#include <string>
 #include "sphere.h"
 #include "vector.h"
 #include "hittable.h"
 #include "camera.h"
+#include "renderer.h"
+#include "ppm.h"
 #include <raylib.h>
 #include <raymath.h>
+
 #define WINDOW_WIDTH 320
 #define WINDOW_HEIGHT 180
 
 
-int main() {   
-    InitWindow(WINDOW_WIDTH * 4, WINDOW_HEIGHT * 4, "raylib example - basic window");
-    DisableCursor();
-
+int main(int argc, char** argv) {
+    
+    bool ppm_mode = false;
+    std::string ppm_filename = "output.ppm";
+    for (int i = 1; i < argc; i++){
+        std::string arg = argv[i];
+        if (arg == "ppm"){
+            ppm_mode = true;
+        }
+    }
 
     std::vector<Color> pixels(WINDOW_WIDTH * WINDOW_HEIGHT);
-    Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
-    Texture2D texture = LoadTextureFromImage(canvas);
-    UnloadImage(canvas);
-
+    
     rt::Vec3 global_up = rt::Vec3(0, 1, 0);
     rt::Camera camera = rt::Camera();
+    rt::Renderer rt_renderer = rt::Renderer(1);
+    rt::HittableList world = rt::HittableList();
+    rt::Vec3 forward = camera.get_forward_vector();
+    rt::Vec3 right   = camera.get_right_vector();
+    rt::Vec3 up      = camera.get_up_vector();
+    
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), rt::Vec3(100, 100, 100), 198));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -2, -5), rt::Vec3(255, 100, 100), 1));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -3, -8), rt::Vec3(100, 255, 100), 3));
     
     float aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
   
@@ -37,15 +53,29 @@ int main() {
     
     float viewport_dy = viewport_height/WINDOW_HEIGHT;
     float viewport_dx = viewport_width/WINDOW_WIDTH;
-    int rays_hit = 0;
-
-    std::vector<std::unique_ptr<rt::Hittable>> hit_list;
-
-    hit_list.push_back(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), rt::Vec3(100, 100, 100), 198));
-    hit_list.push_back(std::make_unique<rt::Sphere>(rt::Vec3(0, -2, -5), rt::Vec3(255, 100, 100), 1));
-    hit_list.push_back(std::make_unique<rt::Sphere>(rt::Vec3(0, -3, -8), rt::Vec3(100, 255, 100), 3));
-
     
+    
+
+    if (ppm_mode){ 
+        for (int y = 0; y < WINDOW_HEIGHT; y++){
+            for (int x = 0; x < WINDOW_WIDTH; x++){
+                rt::Vec3 direction = (top_left + right * ((x + 0.5)* viewport_dx) - up * ((y +0.5)* viewport_dy)) - camera.get_position();
+                rt::Ray camera_ray = rt::Ray(camera.get_position(), direction.normalize());
+                rt::Color pixel = rt_renderer.pixel_color(camera_ray, world, camera);
+                pixels[y * WINDOW_WIDTH + x] = Color{static_cast<unsigned char>(pixel.x), static_cast<unsigned char>(pixel.y), static_cast<unsigned char>(pixel.z), 255};
+              
+            }
+        }
+        output_ppm(ppm_filename, pixels, WINDOW_WIDTH, WINDOW_HEIGHT);
+    }
+
+
+
+    InitWindow(WINDOW_WIDTH * 4, WINDOW_HEIGHT * 4, "raylib example - basic window");
+    Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
+    Texture2D texture = LoadTextureFromImage(canvas);
+    UnloadImage(canvas);
+    DisableCursor();
    
     SetTargetFPS(30);
     while (!WindowShouldClose())
@@ -58,9 +88,8 @@ int main() {
 
        
         rt::Vec3 forward = camera.get_forward_vector();
-        global_up = rt::Vec3(0, 1, 0);
-        rt::Vec3 right   = forward.cross(global_up).normalize();
-        rt::Vec3 up      = right.cross(forward).normalize();
+        rt::Vec3 right   = camera.get_right_vector();
+        rt::Vec3 up      = camera.get_up_vector();
 
 
         if (IsKeyDown(KEY_RIGHT)){
@@ -84,28 +113,11 @@ int main() {
 
         for (int y = 0; y < WINDOW_HEIGHT; y++){
             for (int x = 0; x < WINDOW_WIDTH; x++){
-            
-                rt::HitRecord record = {-1, rt::Vec3(), rt::Vec3()};
                 rt::Vec3 direction = (top_left + right * ((x + 0.5)* viewport_dx) - up * ((y +0.5)* viewport_dy)) - camera.get_position();
                 rt::Ray camera_ray = rt::Ray(camera.get_position(), direction.normalize());
-                
-                for (auto i = hit_list.begin(); i != hit_list.end(); ++i){
-                    
-                    (*i) -> hit(camera_ray, record);
-                }
-                if (record.time == -1){
-                    unsigned char r = rt::rgb_map(camera_ray.ray_color().x);
-                    unsigned char g = rt::rgb_map(camera_ray.ray_color().y);
-                    unsigned char b = rt::rgb_map(camera_ray.ray_color().z);
-                    pixels[y * WINDOW_WIDTH + x] = Color{r, g, b, 255};
-                    
-                }
-                else{
-                    unsigned char r = static_cast<unsigned char>(record.color.x);
-                    unsigned char g =  static_cast<unsigned char>(record.color.y);
-                    unsigned char b = static_cast<unsigned char>(record.color.z);
-                    pixels[y * WINDOW_WIDTH + x] = Color{r, g, b, 255};
-                }
+                rt::Color pixel = rt_renderer.pixel_color(camera_ray, world, camera);
+                pixels[y * WINDOW_WIDTH + x] = Color{static_cast<unsigned char>(pixel.x), static_cast<unsigned char>(pixel.y), static_cast<unsigned char>(pixel.z), 255};
+              
             }
         }
         
@@ -113,10 +125,7 @@ int main() {
 
         UpdateTexture(texture, pixels.data());
         BeginDrawing();
-
             ClearBackground(BLACK);
-         
-            
             DrawTexturePro(texture, {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, {0, 0, 4 * WINDOW_WIDTH, 4 * WINDOW_HEIGHT}, {0,0}, 0.0f, WHITE);
             DrawFPS(0, 0);
         EndDrawing();

@@ -35,11 +35,12 @@ void Sphere::hit(const Ray& ray, HitRecord& record) const{
     Vec3 P = ray.ray_at(t);
     Vec3 normal = P - position;
     Vec3 unit = normal.normalize();
+    
     if (record.time == -1 || t < record.time){
         
         record.time = t;
         record.normal = unit;
-        record.color = Vec3(color.x , color.y, color.z);
+        record.color = Vec3(rgb_map(normal.x), rgb_map(normal.y), rgb_map(normal.z));
     }
     
 }

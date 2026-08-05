@@ -1,5 +1,4 @@
-#ifndef SPHERE_H
-#define SPHERE_H
+#pragma once
 #include "hittable.h"
 #include "vector.h"
 
@@ -19,4 +18,3 @@ class Sphere : public Hittable{
   
 };
 }
-#endif

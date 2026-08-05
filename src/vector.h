@@ -1,5 +1,4 @@
-#ifndef VECTOR_H
-#define VECTOR_H
+#pragma once
 
 #include <cmath>
 #include <iostream>
@@ -29,7 +28,7 @@ struct Vec3{
     Vec3 operator-(const Vec3& other) const{
         return Vec3(x - other.x, y - other.y, z - other.z);
     }
-    Vec3 operator*(float t){
+    Vec3 operator*(float t) const{
         return Vec3(x * t, y * t, z* t);
     }
     Vec3& normalize(){
@@ -65,7 +64,7 @@ struct Vec3{
 
 };
 
-using color = Vec3;
+using Color = Vec3;
 
 inline int rgb_map(float x){
     return static_cast<int>((x + 1) / 2 * 255);
@@ -77,18 +76,18 @@ struct Ray{
     Ray(Vec3 origin, Vec3 direction):
     origin(origin), direction(direction)
     {
+    }
 
-    }
     Vec3 ray_at(float t) const{
-        return origin + direction;
+        return origin + (direction * t);
     }
-    color ray_color() const{
+
+    Color ray_color() const{
         Vec3 unit_direction = direction;
         float a = 0.5 * (direction.y+ 1.0);
-        return color(1.0, 1.0, 1.0) * (1.0 - a) + color(0.5, 0.7, 1.0) * a;
+        return Color(1.0, 1.0, 1.0) * (1.0 - a) + Color(0.5, 0.7, 1.0) * a;
     }   
     
 }; 
 
 }
-#endif
