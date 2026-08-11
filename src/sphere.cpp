@@ -1,6 +1,6 @@
-#include "sphere.h"
-#include "vector.h"
-#include "hittable.h"
+#include "Sphere.h"
+#include "Vector.h"
+#include "Hittable.h"
 
 using namespace rt;
 Sphere::Sphere(Vec3 position, Vec3 color, float radius):

@@ -1,8 +1,10 @@
 #pragma once
 
-#include "hittable.h"
-#include "camera.h"
-#include "vector.h"
+#include "Hittable.h"
+#include "Camera.h"
+#include "Vector.h"
+#include "ImageBuffer.h"
+#include "Viewport.h"
 namespace rt {
 
 class Renderer {
@@ -11,7 +13,7 @@ class Renderer {
             : ssp(r_ssp)
         {
         }
-        Color pixel_color(const Ray& ray, const HittableList& hit_list, const Camera& camera);
+        void render_frame(const HittableList& hit_list, const Camera& camera, const Viewport& viewport, ImageBuffer& pixels) const;
         
     private:
         int ssp;

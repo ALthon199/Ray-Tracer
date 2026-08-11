@@ -1,5 +1,5 @@
 #pragma once
-#include "vector.h"
+#include "Vector.h"
 
 namespace rt {
 class Light {

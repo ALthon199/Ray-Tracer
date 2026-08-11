@@ -1,6 +1,6 @@
 #pragma once
-#include "hittable.h"
-#include "vector.h"
+#include "Hittable.h"
+#include "Vector.h"
 
 namespace rt{
 class Sphere : public Hittable{

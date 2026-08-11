@@ -5,12 +5,14 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "sphere.h"
-#include "vector.h"
-#include "hittable.h"
-#include "camera.h"
-#include "renderer.h"
-#include "ppm.h"
+#include "Sphere.h"
+#include "Vector.h"
+#include "Hittable.h"
+#include "Camera.h"
+#include "Renderer.h"
+#include "PPM.h"
+#include "Viewport.h"
+#include "ImageBuffer.h"
 #include <raylib.h>
 #include <raymath.h>
 
@@ -29,8 +31,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::vector<Color> pixels(WINDOW_WIDTH * WINDOW_HEIGHT);
-    
+  
     rt::Vec3 global_up = rt::Vec3(0, 1, 0);
     rt::Camera camera = rt::Camera();
     rt::Renderer rt_renderer = rt::Renderer(1);
@@ -43,6 +44,9 @@ int main(int argc, char** argv) {
     world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -2, -5), rt::Vec3(255, 100, 100), 1));
     world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -3, -8), rt::Vec3(100, 255, 100), 3));
     
+    rt::Viewport viewport = rt::Viewport(0.8, WINDOW_WIDTH, WINDOW_HEIGHT);
+    rt::ImageBuffer pixels = rt::ImageBuffer(WINDOW_WIDTH, WINDOW_HEIGHT);
+
     float aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
   
     float viewport_height = 0.8;
@@ -54,19 +58,10 @@ int main(int argc, char** argv) {
     float viewport_dy = viewport_height/WINDOW_HEIGHT;
     float viewport_dx = viewport_width/WINDOW_WIDTH;
     
-    
 
     if (ppm_mode){ 
-        for (int y = 0; y < WINDOW_HEIGHT; y++){
-            for (int x = 0; x < WINDOW_WIDTH; x++){
-                rt::Vec3 direction = (top_left + right * ((x + 0.5)* viewport_dx) - up * ((y +0.5)* viewport_dy)) - camera.get_position();
-                rt::Ray camera_ray = rt::Ray(camera.get_position(), direction.normalize());
-                rt::Color pixel = rt_renderer.pixel_color(camera_ray, world, camera);
-                pixels[y * WINDOW_WIDTH + x] = Color{static_cast<unsigned char>(pixel.x), static_cast<unsigned char>(pixel.y), static_cast<unsigned char>(pixel.z), 255};
-              
-            }
-        }
-        output_ppm(ppm_filename, pixels, WINDOW_WIDTH, WINDOW_HEIGHT);
+        rt_renderer.render_frame(world, camera, viewport, pixels);
+        output_ppm(ppm_filename, pixels.get_pixels(), WINDOW_WIDTH, WINDOW_HEIGHT);
     }
 
 
@@ -109,21 +104,18 @@ int main(int argc, char** argv) {
             
         }
 
+        if (IsKeyPressed(KEY_P)){
+            std::cout << "Saving output";
+            output_ppm(ppm_filename, pixels.get_pixels(), WINDOW_WIDTH, WINDOW_HEIGHT);
+        }
+
         top_left = camera.get_position() + forward * viewport_depth + up * (viewport_height/2) - right * (viewport_width/2);
 
-        for (int y = 0; y < WINDOW_HEIGHT; y++){
-            for (int x = 0; x < WINDOW_WIDTH; x++){
-                rt::Vec3 direction = (top_left + right * ((x + 0.5)* viewport_dx) - up * ((y +0.5)* viewport_dy)) - camera.get_position();
-                rt::Ray camera_ray = rt::Ray(camera.get_position(), direction.normalize());
-                rt::Color pixel = rt_renderer.pixel_color(camera_ray, world, camera);
-                pixels[y * WINDOW_WIDTH + x] = Color{static_cast<unsigned char>(pixel.x), static_cast<unsigned char>(pixel.y), static_cast<unsigned char>(pixel.z), 255};
-              
-            }
-        }
+        rt_renderer.render_frame(world, camera, viewport, pixels);
         
     
 
-        UpdateTexture(texture, pixels.data());
+        UpdateTexture(texture, pixels.get_pixels().data());
         BeginDrawing();
             ClearBackground(BLACK);
             DrawTexturePro(texture, {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, {0, 0, 4 * WINDOW_WIDTH, 4 * WINDOW_HEIGHT}, {0,0}, 0.0f, WHITE);

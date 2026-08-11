@@ -22,6 +22,12 @@ struct Vec3{
         z += other.z;
         return (*this);
     }
+    Vec3& operator*=(float t){
+        x *= t;
+        y *= t;
+        z *= t;
+        return (*this);
+    }
     Vec3 operator+(const Vec3& other) const{
         return Vec3(x + other.x, y + other.y, z + other.z);
     }

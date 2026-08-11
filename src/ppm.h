@@ -3,11 +3,11 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "sphere.h"
-#include "vector.h"
-#include "hittable.h"
-#include "camera.h"
-#include "renderer.h"
+#include "Sphere.h"
+#include "Vector.h"
+#include "Hittable.h"
+#include "Camera.h"
+#include "Renderer.h"
 #include <raylib.h>
 // File to simply to help with outputting ppm files
 
@@ -25,7 +25,5 @@ inline void output_ppm(const std::string& out_file, const std::vector<Color>& pi
             outFile << (int) (pixel.r) << " " << (int) (pixel.g) << " " << (int) (pixel.b) << "\n";
         }
     }
-
-
 
 }
