@@ -15,8 +15,8 @@ class ImageBuffer{
         }
 
         void set_pixel(int row, int col, const rt::Color& pixel){
-            
-            pixels[row * width + col] = ::Color{static_cast<unsigned char>(pixel.x), static_cast<unsigned char>(pixel.y), static_cast<unsigned char>(pixel.z), 255};
+          
+            pixels[row * width + col] = ::Color{static_cast<unsigned char>(rgb_map(pixel.x)), static_cast<unsigned char>(rgb_map(pixel.y)), static_cast<unsigned char>(rgb_map(pixel.z)), 255};
         }
         
         int get_width() const{

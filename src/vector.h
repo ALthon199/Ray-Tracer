@@ -28,6 +28,12 @@ struct Vec3{
         z *= t;
         return (*this);
     }
+    Vec3& operator*=(Vec3 other){
+        x *= other.x;
+        y *= other.y;
+        z *= other.z;
+        return (*this);
+    }
     Vec3 operator+(const Vec3& other) const{
         return Vec3(x + other.x, y + other.y, z + other.z);
     }
@@ -36,6 +42,9 @@ struct Vec3{
     }
     Vec3 operator*(float t) const{
         return Vec3(x * t, y * t, z* t);
+    }
+    Vec3 operator*(Vec3 other) const{
+        return Vec3(x * other.x, y * other.y, z * other.z);
     }
     Vec3& normalize(){
         float scale = std::sqrt(x * x + y * y + z * z);
@@ -73,7 +82,7 @@ struct Vec3{
 using Color = Vec3;
 
 inline int rgb_map(float x){
-    return static_cast<int>((x + 1) / 2 * 255);
+    return static_cast<int>((x)  * 255);
 }
 struct Ray{
     Vec3 origin;
@@ -88,9 +97,9 @@ struct Ray{
         return origin + (direction * t);
     }
 
-    Color ray_color() const{
+    Color ray_base_color() const{
         Vec3 unit_direction = direction;
-        float a = 0.5 * (direction.y+ 1.0);
+        float a = 0.5 * (direction.y + 1.0);
         return Color(1.0, 1.0, 1.0) * (1.0 - a) + Color(0.5, 0.7, 1.0) * a;
     }   
     

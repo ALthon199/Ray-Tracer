@@ -34,15 +34,15 @@ int main(int argc, char** argv) {
   
     rt::Vec3 global_up = rt::Vec3(0, 1, 0);
     rt::Camera camera = rt::Camera();
-    rt::Renderer rt_renderer = rt::Renderer(1);
+    rt::Renderer rt_renderer = rt::Renderer(5, 3);
     rt::HittableList world = rt::HittableList();
     rt::Vec3 forward = camera.get_forward_vector();
     rt::Vec3 right   = camera.get_right_vector();
     rt::Vec3 up      = camera.get_up_vector();
     
-    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), rt::Vec3(100, 100, 100), 198));
-    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -2, -5), rt::Vec3(255, 100, 100), 1));
-    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -3, -8), rt::Vec3(100, 255, 100), 3));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), rt::Vec3(1.0, 0, 0), 199));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -0.5, -3), rt::Vec3(1.0, 0 , 0), 0.5));
+    
     
     rt::Viewport viewport = rt::Viewport(0.8, WINDOW_WIDTH, WINDOW_HEIGHT);
     rt::ImageBuffer pixels = rt::ImageBuffer(WINDOW_WIDTH, WINDOW_HEIGHT);

@@ -9,14 +9,15 @@ namespace rt {
 
 class Renderer {
     public:
-        Renderer(int r_ssp)
-            : ssp(r_ssp)
+        Renderer(int r_ssp, int r_max_bounces)
+            : ssp(r_ssp), max_bounces(r_max_bounces)
         {
         }
         void render_frame(const HittableList& hit_list, const Camera& camera, const Viewport& viewport, ImageBuffer& pixels) const;
         
     private:
         int ssp;
+        int max_bounces;
         
               
 };

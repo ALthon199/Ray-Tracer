@@ -35,28 +35,10 @@ namespace rt{
                     Vec3 target = top_left + right * pixel_x * dx - up * pixel_y * dy;
                     Vec3 direction = target - camera.get_position();
                     Ray sample = Ray(camera.get_position(), direction.normalize());
-                    HitRecord record = {-1, Vec3(), Vec3()};
-                    const std::vector<std::unique_ptr<Hittable>>& hit_list = world.get_hit_list();
-                    for (auto i = hit_list.begin(); i != hit_list.end(); ++i){        
-                        (*i) -> hit(sample, record);
-                    }
-
-
-                    float r;
-                    float g;
-                    float b;
-
-                    if (record.time == -1){
-                        r = rt::rgb_map(sample.ray_color().x);
-                        g = rt::rgb_map(sample.ray_color().y);
-                        b = rt::rgb_map(sample.ray_color().z);
-                    }
-                    else{
-                        r = static_cast<float>(record.color.x);
-                        g =  static_cast<float>(record.color.y);
-                        b = static_cast<float>(record.color.z);
-                    }
-                    Color sample_color = Color(r, g, b);
+                    
+                
+                    
+                    Color sample_color = world.calculate_color(sample, max_bounces);
                    
                     pixel += sample_color;  
             
