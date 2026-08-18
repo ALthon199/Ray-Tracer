@@ -58,7 +58,9 @@ struct Vec3{
         return (*this);
     }
     
-
+    float magnitude(){
+        return std::sqrt(x * x + y * y + z * z);
+    }
     void set(float new_x, float new_y, float new_z){
         x = new_x;
         y = new_y;
@@ -82,7 +84,13 @@ struct Vec3{
 using Color = Vec3;
 
 inline int rgb_map(float x){
-    return static_cast<int>((x)  * 255);
+    if (x > 0.9999){
+        x = 0.9999;
+    }
+    if (x < 0.0001){
+        x = 0.0001;
+    }
+    return static_cast<int>((x)  * 255.99);
 }
 struct Ray{
     Vec3 origin;

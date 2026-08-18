@@ -8,11 +8,13 @@
 #include "Sphere.h"
 #include "Vector.h"
 #include "Hittable.h"
+#include "Scene.h"
 #include "Camera.h"
 #include "Renderer.h"
 #include "PPM.h"
 #include "Viewport.h"
 #include "ImageBuffer.h"
+#include "Light.h"
 #include <raylib.h>
 #include <raymath.h>
 
@@ -35,13 +37,17 @@ int main(int argc, char** argv) {
     rt::Vec3 global_up = rt::Vec3(0, 1, 0);
     rt::Camera camera = rt::Camera();
     rt::Renderer rt_renderer = rt::Renderer(5, 3);
-    rt::HittableList world = rt::HittableList();
+    rt::Scene world = rt::Scene();
     rt::Vec3 forward = camera.get_forward_vector();
     rt::Vec3 right   = camera.get_right_vector();
     rt::Vec3 up      = camera.get_up_vector();
     
+
+    world.add_light(std::make_unique<rt::Light> (rt::Light(rt::Vec3(0, 1, -1),  rt::Vec3(1.0, 1.0, 1.0), 0.8)));
+  
     world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), rt::Vec3(1.0, 0, 0), 199));
-    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -0.5, -3), rt::Vec3(1.0, 0 , 0), 0.5));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -0.5, -3), rt::Vec3(0, 0 , 1.0), 0.5));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(1, -0.5, -3), rt::Vec3(0, 1.0, 0), 0.5));
     
     
     rt::Viewport viewport = rt::Viewport(0.8, WINDOW_WIDTH, WINDOW_HEIGHT);

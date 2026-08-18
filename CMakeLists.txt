@@ -8,9 +8,11 @@ project(MyProject LANGUAGES CXX)
 add_executable(my_app)
 
 # 4. Bind the source files to your target
-target_sources(my_app PRIVATE src/main.cpp src/sphere.cpp
-    src/renderer.cpp
-    src/utility.cpp)
+target_sources(my_app PRIVATE src/main.cpp src/Sphere.cpp
+    src/Renderer.cpp
+    src/Utility.cpp
+    src/Light.cpp
+    src/Scene.cpp)
 
 
 # Locate an external library installed on your system (e.g., glfw)
