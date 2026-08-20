@@ -2,21 +2,25 @@
 #include "Vector.h"
 #include "Hittable.h"
 #include "Utility.h"
+#include "Material.h"
 
 namespace rt{
-Sphere::Sphere(Vec3 position, Vec3 color, float radius):
-    position(position), color(color), radius(radius)
+Sphere::Sphere(Vec3 position, float radius, std::shared_ptr<Material> material):
+    position(position), radius(radius), Hittable(material)
 {
 
 }
 
+MaterialType Sphere::get_material_type() const {
+    return material -> get_type();
+}
+
 // Returns the time t >= 0 of where the ray hits, returns -1 if doesnt hit
-void Sphere::hit(const Ray& ray, HitRecord& record) const{
+void Sphere::hit(const Ray& ray, HitRecord& record) const {
     float a = ray.direction.dot(ray.direction);
     float b = 2 * ray.direction.dot(ray.origin - position); 
     float c = (ray.origin - position).dot(ray.origin - position) - radius * radius;
-    float det = b * b - 4 * a * c;
-
+    float det = b * b - 4 * a * c; 
     // No hits
     if (det < 0.0f) return;
 
@@ -34,18 +38,17 @@ void Sphere::hit(const Ray& ray, HitRecord& record) const{
     Vec3 unit = normal.normalize();
     
     if (record.time <= -0.999f || t < record.time){
-        record.hit_light = false;
+      
         record.time = t;
         record.normal = unit;
-        record.color = sphere_color();
+        
+        record.material = material;
     }
 }
 
-Vec3 Sphere:: get_origin() const{
-    return position;
+Vec3 Sphere::sample_point() const{
+    return position + random_unit_vec() * radius;
 }
-Vec3 Sphere::sphere_color() const{
-    return color;
-}
+
 
 }

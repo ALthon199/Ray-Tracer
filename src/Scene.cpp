@@ -1,17 +1,17 @@
 #include "Scene.h"
-#include "Light.h"
+#include "Material.h"
+
 
 namespace rt {
 
 void Scene::add_hittable(std::unique_ptr<Hittable> object){
+    if (object -> get_material() -> get_type() == MaterialType :: EMISSIVE){
+        light_list.push_back(object.get());
+    }
     hit_list.push_back(std::move(object));
 }
 
-void Scene::add_light(std::unique_ptr<Light> object){
-    // Light is also an object, pointer is managed internally
-    light_list.push_back(object.get());
-    hit_list.push_back(std::move(object));
-}
+
 
 const std::vector<std::unique_ptr<Hittable>>& Scene::get_hit_list() const{
     return hit_list;
@@ -32,11 +32,12 @@ bool Scene::ray_hit(const Ray& ray, HitRecord& record) const{
 
 Color Scene::direct_lighting(const Vec3& pos, const Vec3& surface_normal) const{
     Color direct_lighting = Vec3();
-
+ 
     for (const auto& light: light_list){
-        HitRecord light_record = HitRecord{false, -1.0f, Vec3(), Vec3()};
+        HitRecord light_record = HitRecord();
+        
         Vec3 source = pos;
-        Vec3 target = light -> get_origin();
+        Vec3 target = light -> sample_point();
         Vec3 direction = target - source;
         float dist = direction.magnitude();
 
@@ -45,12 +46,12 @@ Color Scene::direct_lighting(const Vec3& pos, const Vec3& surface_normal) const{
 
         bool hit = ray_hit(lighting_ray, light_record);
         if (!hit) continue;
-        if (!light_record.hit_light) continue;
-        
+        if (!(light_record.material -> get_type() == MaterialType::EMISSIVE)) continue;
+    
         float norm_dot_light = lighting_ray.direction.dot(surface_normal);
         norm_dot_light = clamp(norm_dot_light, 0.0f, 1.0f);
         float attenuation = 1.0f / (1.0f + 0.1f * dist + 0.01f * dist * dist);
-        direct_lighting += light_record.color * norm_dot_light * attenuation;
+        direct_lighting += light_record.material ->emitted() * norm_dot_light * attenuation;
     }
 
 

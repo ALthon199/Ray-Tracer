@@ -14,7 +14,7 @@ class Renderer {
             : ssp(r_ssp), max_bounces(r_max_bounces)
         {
         }
-        Color calculate_color(const Ray& ray, const Scene& world, int bounces) const;
+        Color calculate_color(const Ray& ray, const Scene& world, int bounces, bool is_primary) const;
         void render_frame(const Scene& world, const Camera& camera, const Viewport& viewport, ImageBuffer& pixels) const;
         
     private:

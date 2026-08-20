@@ -14,7 +14,7 @@
 #include "PPM.h"
 #include "Viewport.h"
 #include "ImageBuffer.h"
-#include "Light.h"
+#include "Material.h"
 #include <raylib.h>
 #include <raymath.h>
 
@@ -25,7 +25,7 @@
 int main(int argc, char** argv) {
     
     bool ppm_mode = false;
-    std::string ppm_filename = "output.ppm";
+    std::string ppm_filename = "check Oh..ppm";
     for (int i = 1; i < argc; i++){
         std::string arg = argv[i];
         if (arg == "ppm"){
@@ -36,18 +36,23 @@ int main(int argc, char** argv) {
   
     rt::Vec3 global_up = rt::Vec3(0, 1, 0);
     rt::Camera camera = rt::Camera();
-    rt::Renderer rt_renderer = rt::Renderer(5, 3);
+    rt::Renderer rt_renderer = rt::Renderer(3, 2);
     rt::Scene world = rt::Scene();
     rt::Vec3 forward = camera.get_forward_vector();
     rt::Vec3 right   = camera.get_right_vector();
     rt::Vec3 up      = camera.get_up_vector();
     
+    std::shared_ptr<rt::Material> diffuse_red = std::make_shared<rt::Diffuse>(rt::Vec3(1.0, 0, 0));
+    std::shared_ptr<rt::Material> diffuse_blue = std::make_shared<rt::Diffuse>(rt::Vec3(0, 0, 1.0));
+    std::shared_ptr<rt::Material> metal_gold = std::make_shared<rt::Metal>(rt::Vec3(0.8, 0.6, 0.2), 0);
+    std::shared_ptr<rt::Material> light = std::make_shared<rt::Emissive>(rt::Vec3(1.0, 1.0, 1.0), 10);
 
-    world.add_light(std::make_unique<rt::Light> (rt::Light(rt::Vec3(0, 1, -1),  rt::Vec3(1.0, 1.0, 1.0), 0.8)));
-  
-    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), rt::Vec3(1.0, 0, 0), 199));
-    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -0.5, -3), rt::Vec3(0, 0 , 1.0), 0.5));
-    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(1, -0.5, -3), rt::Vec3(0, 1.0, 0), 0.5));
+    
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), 199, diffuse_red));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -0.5, -3), 0.5, diffuse_blue));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(1, -0.5, -3), 0.5, metal_gold));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, 1, -1), 0.8, light));
+
     
     
     rt::Viewport viewport = rt::Viewport(0.8, WINDOW_WIDTH, WINDOW_HEIGHT);

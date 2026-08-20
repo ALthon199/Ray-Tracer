@@ -9,30 +9,45 @@
 #include <raylib.h>
 
 namespace rt{
-    Color Renderer::calculate_color(const Ray& ray, const Scene& world, int bounces) const{
+    Color Renderer::calculate_color(const Ray& ray, const Scene& world, int bounces, bool is_primary) const{
         if (bounces <= 0) return Color();
 
-        HitRecord record = HitRecord{false, -1.0f, Vec3(), Vec3()};
-
+        HitRecord record = HitRecord();
+        ScatterRecord s_record = ScatterRecord{Vec3(), Ray(Vec3(), Vec3())};
         bool hit = world.ray_hit(ray, record);
-        if (!hit) return Color(0.05, 0.05, 0.05);
-        if (record.hit_light) return record.color;
-
-        Vec3 hit_pos = ray.ray_at(record.time);
-        Color direct_lighting = world.direct_lighting(hit_pos + record.normal * 0.001f, record.normal);
+        if (!hit) return Color(0.8, 0.8, 0.8);
         
+        Color direct_lighting;
+        Color indirect_lighting;
+        bool scattered;
+        Vec3 hit_pos = ray.ray_at(record.time);
 
-        Vec3 new_dir = record.normal + random_unit_vec();
-        if (new_dir.magnitude() <= 0.0001f) new_dir = record.normal;
-        else new_dir.normalize();
+        switch(record.material -> get_type()){
+            case MaterialType::EMISSIVE:
+                return is_primary ? record.material -> emitted() : Color();
+        
+            case MaterialType::DIFFUSE:          
+                direct_lighting = world.direct_lighting(hit_pos + record.normal * 0.001f, record.normal);
+                scattered = record.material -> scatter(ray, record, s_record);
+                indirect_lighting = calculate_color(s_record.scattered_ray, world, bounces - 1, false);
+                break;
 
-        Vec3 new_pos = hit_pos + record.normal * 0.001f;
-        Ray new_ray = Ray(new_pos, new_dir); 
-        Color indirect_lighting = calculate_color(new_ray, world, bounces - 1);
-
-        Color total_lighting = indirect_lighting + direct_lighting;
+            case MaterialType::METAL:
+                direct_lighting = Vec3();
+                scattered = record.material -> scatter(ray, record, s_record);
+                if (!scattered){
+                    return Vec3();
+                }
+                indirect_lighting = calculate_color(s_record.scattered_ray, world, bounces - 1, true);
+                break;
+        }
+        
        
-        return record.color * total_lighting;
+        // std::cout << "INDIRECT" << indirect_lighting.x << " " << indirect_lighting.y << " " << indirect_lighting.z <<"\n";
+        Color total_lighting = indirect_lighting + direct_lighting;
+        return s_record.attentuation * total_lighting;
+        
+  
     }
 
     void Renderer::render_frame(const Scene& world, const Camera& camera, const Viewport& viewport, ImageBuffer& pixels) const{
@@ -63,7 +78,7 @@ namespace rt{
                     Vec3 direction = target - camera.get_position();
                     Ray sample = Ray(camera.get_position(), direction.normalize());
                         
-                    Color sample_color = calculate_color(sample, world, max_bounces);
+                    Color sample_color = calculate_color(sample, world, max_bounces, true);
                    
                     pixel += sample_color;  
             
