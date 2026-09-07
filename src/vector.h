@@ -58,7 +58,7 @@ struct Vec3{
         return (*this);
     }
     
-    float magnitude(){
+    float magnitude() const{
         return std::sqrt(x * x + y * y + z * z);
     }
     void set(float new_x, float new_y, float new_z){
@@ -76,7 +76,10 @@ struct Vec3{
             x * other.y - y * other.x
         );
     }
-   
+    
+    Vec3 hit_offset(const Vec3& outward_normal) const{
+        return (*this) + (outward_normal * 0.001);
+    }
 
 
 };

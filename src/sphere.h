@@ -4,12 +4,11 @@
 #include "Vector.h"
 #include <memory>
 
-namespace rt{
-class Sphere : public Hittable{
+namespace rt {
+class Sphere : public Hittable {
     public: 
         Sphere(Vec3 pos, float radius, std::shared_ptr<Material> material);
         Vec3 sample_point() const override;
-        MaterialType get_material_type() const;
         void hit(const Ray& ray, HitRecord& record) const override;
         
     

@@ -4,16 +4,14 @@
 #include "Utility.h"
 #include "Material.h"
 
-namespace rt{
+namespace rt {
+
 Sphere::Sphere(Vec3 position, float radius, std::shared_ptr<Material> material):
     position(position), radius(radius), Hittable(material)
 {
 
 }
 
-MaterialType Sphere::get_material_type() const {
-    return material -> get_type();
-}
 
 // Returns the time t >= 0 of where the ray hits, returns -1 if doesnt hit
 void Sphere::hit(const Ray& ray, HitRecord& record) const {
@@ -38,10 +36,8 @@ void Sphere::hit(const Ray& ray, HitRecord& record) const {
     Vec3 unit = normal.normalize();
     
     if (record.time <= -0.999f || t < record.time){
-      
         record.time = t;
         record.normal = unit;
-        
         record.material = material;
     }
 }

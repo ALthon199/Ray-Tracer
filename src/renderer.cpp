@@ -8,7 +8,8 @@
 #include "Utility.h"
 #include <raylib.h>
 
-namespace rt{
+namespace rt {
+
     Color Renderer::calculate_color(const Ray& ray, const Scene& world, int bounces, bool is_primary) const{
         if (bounces <= 0) return Color();
 
@@ -23,16 +24,18 @@ namespace rt{
         Vec3 hit_pos = ray.ray_at(record.time);
 
         switch(record.material -> get_type()){
-            case MaterialType::EMISSIVE:
+            case MaterialType::EMISSIVE: {
                 return is_primary ? record.material -> emitted() : Color();
-        
-            case MaterialType::DIFFUSE:          
-                direct_lighting = world.direct_lighting(hit_pos + record.normal * 0.001f, record.normal);
+            }
+            case MaterialType::DIFFUSE: {          
+                const Vec3& next_pos = hit_pos.hit_offset(record.normal);
+                direct_lighting = world.direct_lighting(next_pos, record.normal);
                 scattered = record.material -> scatter(ray, record, s_record);
                 indirect_lighting = calculate_color(s_record.scattered_ray, world, bounces - 1, false);
                 break;
+            }
 
-            case MaterialType::METAL:
+            case MaterialType::METAL: {
                 direct_lighting = Vec3();
                 scattered = record.material -> scatter(ray, record, s_record);
                 if (!scattered){
@@ -40,15 +43,27 @@ namespace rt{
                 }
                 indirect_lighting = calculate_color(s_record.scattered_ray, world, bounces - 1, true);
                 break;
+            }
+            case MaterialType::DIELECTRIC: {
+                direct_lighting = Vec3();
+                scattered = record.material -> scatter(ray, record, s_record);
+                indirect_lighting = calculate_color(s_record.scattered_ray, world, bounces - 1, true);
+                break;
+            }
         }
         
        
-        // std::cout << "INDIRECT" << indirect_lighting.x << " " << indirect_lighting.y << " " << indirect_lighting.z <<"\n";
+        
         Color total_lighting = indirect_lighting + direct_lighting;
-        return s_record.attentuation * total_lighting;
+      
+       
+
+        return total_lighting * s_record.attentuation;;
         
   
     }
+
+    
 
     void Renderer::render_frame(const Scene& world, const Camera& camera, const Viewport& viewport, ImageBuffer& pixels) const{
        

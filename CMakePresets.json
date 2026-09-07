@@ -1,29 +1,51 @@
-  {
-    "version": 3,
-    "configurePresets": [
-      {
-        "name": "windows-msys2-clang",
-        "displayName": "Clang 64-bit + vcpkg",
-        "description": "Windows MSYS2 Clang with vcpkg package manager",
-        "generator": "Ninja",
-        "binaryDir": "${sourceDir}/build/${presetName}",
-        "toolchainFile": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "environment": {
-          "PATH": "C:/msys64/clang64/bin;C:/msys64/usr/bin;"
-        },
-        "cacheVariables": {
-          "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
-          "CMAKE_C_COMPILER": "C:/msys64/clang64/bin/clang.exe",
-          "CMAKE_CXX_COMPILER": "C:/msys64/clang64/bin/clang++.exe",
-          "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined"
-
-        }
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "clang-debug",
+      "displayName": "Clang Debug (Sanitizers)",
+      "description": "Slow build with AddressSanitizer and UndefinedBehaviorSanitizer for catching memory bugs",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "environment": {
+        "PATH": "C:/msys64/clang64/bin;C:/msys64/usr/bin;"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+        "CMAKE_C_COMPILER": "C:/msys64/clang64/bin/clang.exe",
+        "CMAKE_CXX_COMPILER": "C:/msys64/clang64/bin/clang++.exe",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "-g -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer"
       }
-    ],
-    "buildPresets": [
-      {
-        "name": "windows-msys2-clang",
-        "configurePreset": "windows-msys2-clang"
+    },
+    {
+      "name": "clang-release",
+      "displayName": "Clang Release (Optimized)",
+      "description": "Full performance build with vectorization and debug checks disabled",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "environment": {
+        "PATH": "C:/msys64/clang64/bin;C:/msys64/usr/bin;"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+        "CMAKE_C_COMPILER": "C:/msys64/clang64/bin/clang.exe",
+        "CMAKE_CXX_COMPILER": "C:/msys64/clang64/bin/clang++.exe",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS": "-O3 -march=native -DNDEBUG"
       }
-    ]
-  }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "clang-debug",
+      "configurePreset": "clang-debug"
+    },
+    {
+      "name": "clang-release",
+      "configurePreset": "clang-release"
+    }
+  ]
+}
