@@ -7,6 +7,7 @@
 #include <string>
 #include "Sphere.h"
 #include "Triangle.h"
+#include "Mesh.h"
 #include "Vector.h"
 #include "Hittable.h"
 #include "Scene.h"
@@ -19,8 +20,8 @@
 #include <raylib.h>
 #include <raymath.h>
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 360
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
 
 
 int main(int argc, char** argv) {
@@ -37,7 +38,7 @@ int main(int argc, char** argv) {
   
     rt::Vec3 global_up = rt::Vec3(0, 1, 0);
     rt::Camera camera = rt::Camera();
-    rt::Renderer rt_renderer = rt::Renderer(20, 7);
+    rt::Renderer rt_renderer = rt::Renderer(100, 10);
     rt::Scene world = rt::Scene();
     rt::Vec3 forward = camera.get_forward_vector();
     rt::Vec3 right   = camera.get_right_vector();
@@ -48,30 +49,76 @@ int main(int argc, char** argv) {
     std::shared_ptr<rt::Material> diffuse_green= std::make_shared<rt::Diffuse>(rt::Vec3(0, 1.0, 0));
     std::shared_ptr<rt::Material> diffuse_yellow = std::make_shared<rt::Diffuse>(rt::Vec3(0.5, 0.5, 0));
     std::shared_ptr<rt::Material> diffuse_teal = std::make_shared<rt::Diffuse>(rt::Vec3(0.0, 0.5, 0.5));
-    std::shared_ptr<rt::Material> metal_gold = std::make_shared<rt::Metal>(rt::Vec3(0.8, 0.6, 0.2), 0.2);
+    std::shared_ptr<rt::Material> metal_gold = std::make_shared<rt::Metal>(rt::Vec3(0.8, 0.6, 0.2), 0);
     std::shared_ptr<rt::Material> soap =std::make_shared<rt::Dielectric>(-0.9);    
     std::shared_ptr<rt::Material> glass = std::make_shared<rt::Dielectric>(1.6);    
     std::shared_ptr<rt::Material> glass_2= std::make_shared<rt::Dielectric>(1.8);    
     std::shared_ptr<rt::Material> light = std::make_shared<rt::Emissive>(rt::Vec3(1.0, 1.0, 1.0), 10);
     
 
-    // Top vertex pushed back, bottom vertices pulled forward:
-    rt::Vec3 a = rt::Vec3(-4.5f, -1.0f, -5.5f); // Back-left
-    rt::Vec3 b = rt::Vec3(-1.0f, -1.0f, -4.0f); // Front-right (closer to the blue sphere)
-    rt::Vec3 c = rt::Vec3(-2.8f,  1.5f, -4.8f); // Top peak
 
-    // world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(2, 0.5, -5), 199, diffuse_yellow));
-    // world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(1, 0.5, -3), 0.5, diffuse_green));
+ 
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(1, 0.5, -3), 0.5, diffuse_green));
     // world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(-1, -0.5, -3), 0.5, glass));
-    // world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(-2, 0, -1), 1.5, glass_2));
+    // world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(-2, 0, -2), 1.5, glass_2));
     world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(3, 0.5, -6), 0.8, metal_gold));
     world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -200, -5), 199, diffuse_teal));
-    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(-1, -0.5, -3), 0.5, diffuse_blue));
+    world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, -1, -3), 0.9, diffuse_blue));
     world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(1, -0.5, -3), 0.5, glass));
     world.add_hittable(std::make_unique<rt::Sphere>(rt::Vec3(0, 1, -1), 0.8, light));
-    world.add_hittable(std::make_unique<rt::Triangle>(a, b, c, metal_gold));
+  
     
-    
+    std::vector<std::unique_ptr<rt::Triangle>> faces;
+    faces.reserve(12);
+
+    // 8 Corner Vertices
+    rt::Vec3 p0(-3.3f, -1.0f, -3.7f); // Front-bottom-left
+    rt::Vec3 p1(-1.7f, -1.0f, -3.7f); // Front-bottom-right
+    rt::Vec3 p2(-1.7f,  0.6f, -3.7f); // Front-top-right
+    rt::Vec3 p3(-3.3f,  0.6f, -3.7f); // Front-top-left
+    rt::Vec3 p4(-3.3f, -1.0f, -5.3f); // Back-bottom-left
+    rt::Vec3 p5(-1.7f, -1.0f, -5.3f); // Back-bottom-right
+    rt::Vec3 p6(-1.7f,  0.6f, -5.3f); // Back-top-right
+    rt::Vec3 p7(-3.3f,  0.6f, -5.3f); // Back-top-left
+
+    // Front Face (+Z)
+    faces.push_back(std::make_unique<rt::Triangle>(p0, p1, p2, nullptr));
+    faces.push_back(std::make_unique<rt::Triangle>(p0, p2, p3, nullptr));
+
+    // Right Face (+X)
+    faces.push_back(std::make_unique<rt::Triangle>(p1, p5, p6, glass));
+    faces.push_back(std::make_unique<rt::Triangle>(p1, p6, p2, glass));
+
+    // Back Face (-Z)
+    faces.push_back(std::make_unique<rt::Triangle>(p5, p4, p7, nullptr));
+    faces.push_back(std::make_unique<rt::Triangle>(p5, p7, p6, nullptr));
+
+    // Left Face (-X)
+    faces.push_back(std::make_unique<rt::Triangle>(p4, p0, p3, glass));
+    faces.push_back(std::make_unique<rt::Triangle>(p4, p3, p7, glass));
+
+    // Top Face (+Y)
+    faces.push_back(std::make_unique<rt::Triangle>(p3, p2, p6, nullptr));
+    faces.push_back(std::make_unique<rt::Triangle>(p3, p6, p7, nullptr));
+
+    // Bottom Face (-Y)
+    faces.push_back(std::make_unique<rt::Triangle>(p4, p5, p1, nullptr));
+    faces.push_back(std::make_unique<rt::Triangle>(p4, p1, p0, nullptr));
+
+    // Move faces into Mesh
+    world.add_hittable(std::make_unique<rt::Mesh>(std::move(faces), diffuse_teal));
+
+
+
+
+
+
+
+
+
+
+
+
     rt::Viewport viewport = rt::Viewport(0.8, WINDOW_WIDTH, WINDOW_HEIGHT);
     rt::ImageBuffer pixels = rt::ImageBuffer(WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -94,7 +141,7 @@ int main(int argc, char** argv) {
 
 
 
-    InitWindow(WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2, "raylib example - basic window");
+    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "raylib example - basic window");
     Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
     Texture2D texture = LoadTextureFromImage(canvas);
     UnloadImage(canvas);
@@ -146,7 +193,7 @@ int main(int argc, char** argv) {
         UpdateTexture(texture, pixels.get_pixels().data());
         BeginDrawing();
             ClearBackground(BLACK);
-            DrawTexturePro(texture, {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, {0, 0, 2 * WINDOW_WIDTH, 2 * WINDOW_HEIGHT}, {0,0}, 0.0f, WHITE);
+            DrawTexturePro(texture, {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, {0,0}, 0.0f, WHITE);
             DrawFPS(0, 0);
         EndDrawing();
     }

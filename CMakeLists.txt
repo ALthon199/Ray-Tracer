@@ -13,7 +13,8 @@ target_sources(my_app PRIVATE src/main.cpp src/Sphere.cpp
     src/Utility.cpp
     src/Material.cpp
     src/Scene.cpp
-    src/Triangle.cpp)
+    src/Triangle.cpp
+    src/Mesh.cpp)
 
 
 # Locate an external library installed on your system (e.g., glfw)
