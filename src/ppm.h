@@ -27,3 +27,20 @@ inline void output_ppm(const std::string& out_file, const std::vector<Color>& pi
     }
 
 }
+
+inline void output_ppm(const std::string& out_file, float* pixels, int WINDOW_WIDTH, int WINDOW_HEIGHT){
+    std::ofstream outFile(out_file);
+    if (!outFile.is_open()) {
+        std::cerr << "Error opening file!" << std::endl;
+    }
+  
+    outFile << "P3" << " " << WINDOW_WIDTH << " " << WINDOW_HEIGHT << " " << 255 << "\n";
+    for (int y = 0; y < WINDOW_HEIGHT; y++){
+        for (int x = 0; x < WINDOW_WIDTH; x++){
+           
+            outFile << (int) (pixels[y * WINDOW_WIDTH + x] ) << " " << (int) (pixels[y * WINDOW_WIDTH + x]) << " " << (int) (pixels[y * WINDOW_WIDTH + x]) << "\n";
+        }
+    }
+
+}
+

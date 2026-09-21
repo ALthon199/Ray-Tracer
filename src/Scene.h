@@ -1,7 +1,7 @@
 #pragma once
 #include "Hittable.h"
 #include "Vector.h"
-
+#include <vector>
 namespace rt {
 
 class Scene {

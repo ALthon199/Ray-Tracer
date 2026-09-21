@@ -2,74 +2,72 @@
 
 #include <cmath>
 #include <iostream>
+#include "cuda_compat.h"
 
 namespace rt{
 struct Vec3{
     float x, y, z;
 
-    Vec3(){
+    HD Vec3(){
         x = 0;
         y = 0;
         z = 0;
     }
-    Vec3(float x, float y, float z): x(x), y(y), z(z)
+    HD Vec3(float x, float y, float z): x(x), y(y), z(z)
     {
     }
 
-    Vec3& operator+=(const Vec3& other){
+    HD Vec3& operator+=(const Vec3& other){
         x += other.x;
         y += other.y;
         z += other.z;
         return (*this);
     }
-    Vec3& operator*=(float t){
+    HD Vec3& operator*=(float t){
         x *= t;
         y *= t;
         z *= t;
         return (*this);
     }
-    Vec3& operator*=(Vec3 other){
+    HD Vec3& operator*=(Vec3 other){
         x *= other.x;
         y *= other.y;
         z *= other.z;
         return (*this);
     }
-    Vec3 operator+(const Vec3& other) const{
+    HD Vec3 operator+(const Vec3& other) const{
         return Vec3(x + other.x, y + other.y, z + other.z);
     }
-    Vec3 operator-(const Vec3& other) const{
+    HD Vec3 operator-(const Vec3& other) const{
         return Vec3(x - other.x, y - other.y, z - other.z);
     }
-    Vec3 operator*(float t) const{
+    HD Vec3 operator*(float t) const{
         return Vec3(x * t, y * t, z* t);
     }
-    Vec3 operator*(Vec3 other) const{
+    HD Vec3 operator*(Vec3 other) const{
         return Vec3(x * other.x, y * other.y, z * other.z);
     }
-    Vec3& normalize(){
-        float scale = std::sqrt(x * x + y * y + z * z);
-        if (scale == 0){
-            std::cout << "Vector of length 0" << std::endl;
-            return (*this);
-        }
+    HD Vec3& normalize(){
+        float scale = sqrtf(x * x + y * y + z * z);
+       
         x /= scale;
         y /= scale;
         z /= scale;
         return (*this);
     }
     
-    float magnitude() const{
-        return std::sqrt(x * x + y * y + z * z);
+    HD float magnitude() const{
+        return sqrtf(x * x + y * y + z * z);
     }
-    void set(float new_x, float new_y, float new_z){
+    HD void set(float new_x, float new_y, float new_z){
         x = new_x;
         y = new_y;
         z = new_z;
     }
-    float dot(const Vec3& other) const{
+    HD float dot(const Vec3& other) const{
         return (x * other.x + y * other.y + z * other.z);
     }
-    Vec3 cross(const Vec3& other) const{
+    HD Vec3 cross(const Vec3& other) const{
         return Vec3(
             y * other.z - z * other.y,
             z * other.x - x * other.z,
@@ -77,7 +75,7 @@ struct Vec3{
         );
     }
     
-    Vec3 hit_offset(const Vec3& outward_normal) const{
+    HD Vec3 hit_offset(const Vec3& outward_normal) const{
         return (*this) + (outward_normal * 0.001);
     }
 
@@ -99,16 +97,16 @@ struct Ray{
     Vec3 origin;
     Vec3 direction;
 
-    Ray(Vec3 origin, Vec3 direction):
+    HD Ray(Vec3 origin, Vec3 direction):
     origin(origin), direction(direction)
     {
     }
 
-    Vec3 ray_at(float t) const{
+    HD Vec3 ray_at(float t) const{
         return origin + (direction * t);
     }
 
-    Color ray_base_color() const{
+    HD Color ray_base_color() const{
         Vec3 unit_direction = direction;
         float a = 0.5 * (direction.y + 1.0);
         return Color(1.0, 1.0, 1.0) * (1.0 - a) + Color(0.5, 0.7, 1.0) * a;

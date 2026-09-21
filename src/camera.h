@@ -2,6 +2,7 @@
 #include "Vector.h"
 #include <raylib.h>
 #include <cmath>
+#include <algorithm>
 
 namespace rt{
     

@@ -1,24 +1,52 @@
-# 1. Set the minimum required CMake version
 cmake_minimum_required(VERSION 3.15)
 
-# 2. Define the project name and programming language
-project(MyProject LANGUAGES CXX)
+if(CMAKE_CUDA_COMPILER)
+    project(MyProject LANGUAGES CXX CUDA)
+else()
+    project(MyProject LANGUAGES CXX)
+endif()
 
-# 3. Create the executable compilation target
 add_executable(my_app)
+target_compile_features(my_app PRIVATE cxx_std_17)
 
-# 4. Bind the source files to your target
-target_sources(my_app PRIVATE src/main.cpp src/Sphere.cpp
+target_sources(my_app PRIVATE
+    src/main.cpp
+    src/Sphere.cpp
     src/Renderer.cpp
     src/Utility.cpp
     src/Material.cpp
     src/Scene.cpp
     src/Triangle.cpp
-    src/Mesh.cpp)
+    src/Mesh.cpp
+)
 
-
-# Locate an external library installed on your system (e.g., glfw)
 find_package(raylib REQUIRED)
-
-# Link the external library securely to your target
 target_link_libraries(my_app PRIVATE raylib)
+
+if(CMAKE_CUDA_COMPILER)
+    find_package(CUDAToolkit REQUIRED)
+
+    target_sources(my_app PRIVATE
+        src/cuda_kernels.cu
+    )
+
+    target_link_libraries(my_app PRIVATE CUDA::cudart)
+
+    set_target_properties(my_app PROPERTIES
+        CUDA_ARCHITECTURES 75
+        CUDA_SEPARABLE_COMPILATION OFF
+    )
+
+    target_compile_definitions(my_app PRIVATE HAS_CUDA)
+
+    find_file(CUDART_DLL cudart64_13.dll
+        PATHS "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.4/bin/x64"
+    )
+    if(CUDART_DLL)
+        add_custom_command(TARGET my_app POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CUDART_DLL}
+            $<TARGET_FILE_DIR:my_app>
+        )
+    endif()
+endif()

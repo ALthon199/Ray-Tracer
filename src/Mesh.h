@@ -1,6 +1,7 @@
 #pragma once
 #include "Triangle.h"
 #include "Hittable.h"
+#include <vector>
 
 namespace rt {
 

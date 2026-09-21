@@ -29,7 +29,9 @@ class ImageBuffer{
         const std::vector<::Color>& get_pixels() const{
             return pixels;
         }
-
+        void buffer_assign(::Color* new_pixels, size_t length){
+            pixels.assign(new_pixels, new_pixels + length);
+        }
     private:
         int width;
         int height;
