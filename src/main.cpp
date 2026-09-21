@@ -17,7 +17,9 @@
 #include "Viewport.h"
 #include "ImageBuffer.h"
 #include "Material.h"
-#include "cuda_kernels.h" 
+#ifdef HAS_CUDA
+#include "cuda_kernels.h"
+#endif
 #include <stdlib.h>
 #include <raylib.h>
 #include <raymath.h>
@@ -145,6 +147,7 @@ int main(int argc, char** argv) {
         output_ppm(ppm_filename, pixels.get_pixels(), WINDOW_WIDTH, WINDOW_HEIGHT);
         return 0;
     }
+#ifdef HAS_CUDA
     else if (cuda_test){
         ppm_filename = "cuda_test.ppm";
         Color* total_pixels = (Color*)malloc(sizeof(float) * WINDOW_HEIGHT * WINDOW_WIDTH);
@@ -154,6 +157,7 @@ int main(int argc, char** argv) {
         free(total_pixels);
 
     }
+#endif
     else{
 
 
