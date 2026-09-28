@@ -19,6 +19,7 @@
 #include "Material.h"
 #ifdef HAS_CUDA
 #include "cuda_kernels.h"
+#include "gpu_scene.h"
 #endif
 #include <stdlib.h>
 #include <raylib.h>
@@ -150,8 +151,15 @@ int main(int argc, char** argv) {
 #ifdef HAS_CUDA
     else if (cuda_test){
         ppm_filename = "cuda_test.ppm";
+        std::vector<rt::GpuSphere> spheres;
+        spheres.push_back(rt::GpuSphere{rt::Vec3(1, 0.5, -2),rt::Vec3(0, 0, 1), 1.0f, 0});
+        rt::GpuScene scene;
+
+        scene.spheres = spheres.data();
+        scene.spheres_count = spheres.capacity();
+
         Color* total_pixels = (Color*)malloc(sizeof(float) * WINDOW_HEIGHT * WINDOW_WIDTH);
-        render_pixels(WINDOW_WIDTH, WINDOW_HEIGHT, total_pixels, camera, viewport);
+        render_pixels(WINDOW_WIDTH, WINDOW_HEIGHT, total_pixels, camera, viewport, scene);
         pixels.buffer_assign(total_pixels, WINDOW_HEIGHT * WINDOW_WIDTH);
         output_ppm(ppm_filename, pixels.get_pixels(), WINDOW_WIDTH, WINDOW_HEIGHT);
         free(total_pixels);

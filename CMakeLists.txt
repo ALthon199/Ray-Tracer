@@ -18,6 +18,7 @@ target_sources(my_app PRIVATE
     src/Scene.cpp
     src/Triangle.cpp
     src/Mesh.cpp
+
 )
 
 find_package(raylib REQUIRED)
@@ -27,14 +28,16 @@ if(CMAKE_CUDA_COMPILER)
     find_package(CUDAToolkit REQUIRED)
 
     target_sources(my_app PRIVATE
+        src/gpu_scene.cu
         src/cuda_kernels.cu
+       
     )
 
     target_link_libraries(my_app PRIVATE CUDA::cudart)
 
     set_target_properties(my_app PROPERTIES
         CUDA_ARCHITECTURES 75
-        CUDA_SEPARABLE_COMPILATION OFF
+        CUDA_SEPARABLE_COMPILATION ON
     )
 
     target_compile_definitions(my_app PRIVATE HAS_CUDA)

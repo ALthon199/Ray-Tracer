@@ -4,6 +4,8 @@
 #include "Vector.h"
 #include "Camera.h"
 #include "Viewport.h"
+#include "cuda_compat.h"
+#include "gpu_scene.h"
 
 namespace rt {
 
@@ -19,6 +21,6 @@ struct KernelData {
    
 };
 
-void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewport viewport);
+void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewport viewport, GpuScene scene);
 
 }

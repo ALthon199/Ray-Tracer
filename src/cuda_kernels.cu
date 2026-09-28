@@ -7,12 +7,14 @@
 #include "Camera.h"
 #include "Vector.h"
 #include "Viewport.h"
+#include "cuda_compat.h"
+#include "gpu_scene.h"
 
 namespace rt{
-__global__ void calculate_pixel_idx(::Color* result, KernelData kernel_data, int width, int height) {
+__global__ void calculate_pixel_idx(::Color* result, KernelData kernel_data, int width, int height, GpuScene scene) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int col = i % width;
-    int row = i / height;
+    int row = i / width;
 
     Vec3& right = kernel_data.right_vector;
     Vec3& up = kernel_data.up_vector;
@@ -20,26 +22,40 @@ __global__ void calculate_pixel_idx(::Color* result, KernelData kernel_data, int
 
     float dx = kernel_data.viewport_dx;
     float dy = kernel_data.viewport_dy;
-    float depth = kernel_data.viewport_dx;
+    float depth = kernel_data.viewport_depth;
     Vec3 topleft = kernel_data.position - right * (width/2) * (dx) + up * (height/2) * (dy);
     Vec3 target = topleft + forward * depth + up * (-row) * dy + right * (col) * dx;
 
     Ray ray = Ray(kernel_data.position, target - kernel_data.position);
     ray.direction.normalize();
 
-    Color color = ray.ray_base_color();
-    result[i] = ::Color{(unsigned char)(color.x * 255), (unsigned char)(color.y * 255), (unsigned char)(color.z * 255), 255};
+    GpuHitRecord record = GpuHitRecord();
+    for (int i = 0; i < scene.spheres_count; i++) {
+       hit_sphere(record, scene.spheres[i], ray);
+    }    
+   
+    if (record.time > 0.0f) {
+        result[i] = raylib_color_from_Vec3(record.color);
+    } else {
+        result[i] = raylib_color_from_Vec3(ray.ray_base_color());
+    }
 }
 
 
 
 
-void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewport viewport) {
 
+void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewport viewport, GpuScene scene) {
 
-    // --- GPU timing ---
-    ::Color* d_result;
-    cudaMalloc(&d_result, width * height * sizeof(::Color));
+    ::Color* gpu_result;
+    GpuSphere* gpu_spheres; 
+    
+    
+
+    
+    cudaMalloc(&gpu_spheres, sizeof(GpuSphere) * scene.spheres_count);
+    cudaMalloc(&gpu_result, width * height * sizeof(::Color));
+    cudaMemcpy(gpu_spheres, scene.spheres, sizeof(GpuSphere) * scene.spheres_count, cudaMemcpyHostToDevice);
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
@@ -57,24 +73,28 @@ void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewpo
     kernel_data.up_vector = camera.get_up_vector();
     kernel_data.right_vector = camera.get_right_vector();
 
+    // Setup scene params
+    GpuScene gpu_scene;
+    gpu_scene.spheres = gpu_spheres;
+    gpu_scene.spheres_count = scene.spheres_count;
+
+
     cudaEventRecord(start);
-    calculate_pixel_idx<<<width, height>>>(d_result, kernel_data, width, height);
+    calculate_pixel_idx<<<width, height>>>(gpu_result, kernel_data, width, height, gpu_scene);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
 
 
 
 
-    cudaMemcpy(pixels, d_result, width * height * sizeof(::Color), cudaMemcpyDeviceToHost);
+    cudaMemcpy(pixels, gpu_result, width * height * sizeof(::Color), cudaMemcpyDeviceToHost);
 
     
 
-    // verify results match
-  
-  
  
 
-    cudaFree(d_result);
+    cudaFree(gpu_spheres);
+    cudaFree(gpu_result);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 

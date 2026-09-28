@@ -12,7 +12,6 @@ struct HitRecord {
     Vec3 normal;
   
     float time;
-  
 
     HitRecord(){
         material = nullptr;
