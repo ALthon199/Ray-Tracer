@@ -10,7 +10,8 @@
 #include "cuda_compat.h"
 #include "gpu_scene.h"
 
-namespace rt{
+namespace rt {
+
 __global__ void calculate_pixel_idx(::Color* result, KernelData kernel_data, int width, int height, GpuScene scene) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int col = i % width;
@@ -45,14 +46,15 @@ __global__ void calculate_pixel_idx(::Color* result, KernelData kernel_data, int
 
 
 
+
+
+
 void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewport viewport, GpuScene scene) {
 
     ::Color* gpu_result;
     GpuSphere* gpu_spheres; 
     
-    
-
-    
+        
     cudaMalloc(&gpu_spheres, sizeof(GpuSphere) * scene.spheres_count);
     cudaMalloc(&gpu_result, width * height * sizeof(::Color));
     cudaMemcpy(gpu_spheres, scene.spheres, sizeof(GpuSphere) * scene.spheres_count, cudaMemcpyHostToDevice);
@@ -88,11 +90,6 @@ void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewpo
 
 
     cudaMemcpy(pixels, gpu_result, width * height * sizeof(::Color), cudaMemcpyDeviceToHost);
-
-    
-
- 
-
     cudaFree(gpu_spheres);
     cudaFree(gpu_result);
     cudaEventDestroy(start);

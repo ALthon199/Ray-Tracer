@@ -30,7 +30,7 @@ if(CMAKE_CUDA_COMPILER)
     target_sources(my_app PRIVATE
         src/gpu_scene.cu
         src/cuda_kernels.cu
-       
+        src/CudaRenderer.cu
     )
 
     target_link_libraries(my_app PRIVATE CUDA::cudart)

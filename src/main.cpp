@@ -20,13 +20,15 @@
 #ifdef HAS_CUDA
 #include "cuda_kernels.h"
 #include "gpu_scene.h"
+#include "CudaRenderer.h"
+
 #endif
 #include <stdlib.h>
 #include <raylib.h>
 #include <raymath.h>
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
+#define WINDOW_WIDTH 1200
+#define WINDOW_HEIGHT 780
 
 
 int main(int argc, char** argv) {
@@ -153,17 +155,91 @@ int main(int argc, char** argv) {
         ppm_filename = "cuda_test.ppm";
         std::vector<rt::GpuSphere> spheres;
         spheres.push_back(rt::GpuSphere{rt::Vec3(1, 0.5, -2),rt::Vec3(0, 0, 1), 1.0f, 0});
+        spheres.push_back(rt::GpuSphere{rt::Vec3(1, -200, -2),rt::Vec3(1, 1, 1), 199.0f, 0});
+        spheres.push_back(rt::GpuSphere{rt::Vec3(-10, 3, -6),rt::Vec3(1, 0, 1), 2.0f, 0});
+        spheres.push_back(rt::GpuSphere{rt::Vec3(10, -2, 8),rt::Vec3(0, 1, 1), 6.0f, 0});
         rt::GpuScene scene;
 
         scene.spheres = spheres.data();
-        scene.spheres_count = spheres.capacity();
+        scene.spheres_count = spheres.size();
 
-        Color* total_pixels = (Color*)malloc(sizeof(float) * WINDOW_HEIGHT * WINDOW_WIDTH);
-        render_pixels(WINDOW_WIDTH, WINDOW_HEIGHT, total_pixels, camera, viewport, scene);
-        pixels.buffer_assign(total_pixels, WINDOW_HEIGHT * WINDOW_WIDTH);
-        output_ppm(ppm_filename, pixels.get_pixels(), WINDOW_WIDTH, WINDOW_HEIGHT);
-        free(total_pixels);
+        Color* host_pixels = (Color*)malloc(sizeof(Color) * WINDOW_HEIGHT * WINDOW_WIDTH);
+        
+        rt::CudaRenderer renderer;
+        rt::KernelData kernel_data;
 
+        renderer.initialize(&scene, WINDOW_WIDTH, WINDOW_HEIGHT);
+        
+        InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "raylib example - basic window");
+        Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
+        Texture2D texture = LoadTextureFromImage(canvas);
+        UnloadImage(canvas);
+        DisableCursor();
+    
+        SetTargetFPS(1000);
+        float dt;
+        while (!WindowShouldClose())
+        {  
+          
+            dt = 1.0 / GetFPS();
+            Vector2 mouse_delta = GetMouseDelta();
+            float length = Vector2Length(mouse_delta);
+            if (length > 0){
+                camera.update_pitch_yaw(-2.0 * dt * mouse_delta.y/length, 2.0 * dt * mouse_delta.x/length);
+            }
+            
+            rt::Vec3 forward = camera.get_forward_vector();
+            rt::Vec3 right   = camera.get_right_vector();
+            rt::Vec3 up      = camera.get_up_vector();
+
+
+            if (IsKeyDown(KEY_RIGHT)){
+                camera.update_pos(right.x * dt * 1.50, right.y * dt * 1.50, right.z * dt * 1.50);   
+            }
+
+            if (IsKeyDown(KEY_LEFT)){
+                camera.update_pos(-right.x * dt * 1.50, -right.y * dt * 1.50, -right.z * dt * 1.50);
+                
+            }
+            if (IsKeyDown(KEY_UP)){
+                camera.update_pos(forward.x * dt * 1.50, forward.y * dt * 1.50, forward.z * dt * 1.50);   
+            }
+
+            if (IsKeyDown(KEY_DOWN)){
+                camera.update_pos(-forward.x * dt * 1.50, -forward.y * dt * 1.50, -forward.z * dt * 1.50);
+                
+            }
+
+            if (IsKeyPressed(KEY_P)){
+                std::cout << "Saving output";
+                output_ppm(ppm_filename, pixels.get_pixels(), WINDOW_WIDTH, WINDOW_HEIGHT);
+            }
+
+            
+            kernel_data.forward_vector = camera.get_forward_vector();
+            kernel_data.up_vector = camera.get_up_vector();
+            kernel_data.right_vector = camera.get_right_vector();
+            kernel_data.viewport_depth = viewport.get_viewport_depth();
+            kernel_data.viewport_dx = viewport.get_viewport_dx();
+            kernel_data.viewport_dy = viewport.get_viewport_dy();
+            kernel_data.position = camera.get_position();
+            renderer.render(kernel_data, host_pixels);
+            
+            UpdateTexture(texture, host_pixels);
+            BeginDrawing();
+                ClearBackground(BLACK);
+                DrawTexturePro(texture, {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, {0,0}, 0.0f, WHITE);
+                DrawFPS(0, 0);
+            EndDrawing();
+        }
+
+        CloseWindow();
+        // Close the file
+        free(host_pixels);
+        renderer.shutdown();
+        
+
+        return 0;
     }
 #endif
     else{
@@ -175,13 +251,13 @@ int main(int argc, char** argv) {
         UnloadImage(canvas);
         DisableCursor();
     
-        SetTargetFPS(30);
+        SetTargetFPS(120);
         while (!WindowShouldClose())
         {  
             Vector2 mouse_delta = GetMouseDelta();
             float length = Vector2Length(mouse_delta);
             if (length > 0){
-                camera.update_pitch_yaw(-0.05 * mouse_delta.y/length, 0.05 * mouse_delta.x/length);
+                camera.update_pitch_yaw(-1.50 * mouse_delta.y/length, 1.50 * mouse_delta.x/length);
             }
 
         
@@ -191,19 +267,19 @@ int main(int argc, char** argv) {
 
 
             if (IsKeyDown(KEY_RIGHT)){
-                camera.update_pos(right.x * 0.05, right.y * 0.05, right.z * 0.05);   
+                camera.update_pos(right.x * 1.50, right.y * 1.50, right.z * 1.50);   
             }
 
             if (IsKeyDown(KEY_LEFT)){
-                camera.update_pos(-right.x * 0.05, -right.y * 0.05, -right.z * 0.05);
+                camera.update_pos(-right.x * 1.50, -right.y * 1.50, -right.z * 1.50);
                 
             }
             if (IsKeyDown(KEY_UP)){
-                camera.update_pos(forward.x * 0.05, forward.y * 0.05, forward.z * 0.05);   
+                camera.update_pos(forward.x * 1.50, forward.y * 1.50, forward.z * 1.50);   
             }
 
             if (IsKeyDown(KEY_DOWN)){
-                camera.update_pos(-forward.x * 0.05, -forward.y * 0.05, -forward.z * 0.05);
+                camera.update_pos(-forward.x * 1.50, -forward.y * 1.50, -forward.z * 1.50);
                 
             }
 

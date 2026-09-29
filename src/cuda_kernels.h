@@ -17,7 +17,8 @@ struct KernelData {
     float viewport_dx;
     float viewport_dy;
     float viewport_depth;
-
+    int width;
+    int height;
    
 };
 
