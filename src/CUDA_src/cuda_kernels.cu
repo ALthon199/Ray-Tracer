@@ -4,11 +4,11 @@
 #include <time.h>
 #include <math.h>
 #include "cuda_kernels.h"
-#include "Camera.h"
-#include "Vector.h"
-#include "Viewport.h"
-#include "cuda_compat.h"
-#include "gpu_scene.h"
+#include "../Camera.h"
+#include "../Vector.h"
+#include "../Viewport.h"
+#include "../cuda_compat.h"
+#include "GpuScene.h"
 
 namespace rt {
 

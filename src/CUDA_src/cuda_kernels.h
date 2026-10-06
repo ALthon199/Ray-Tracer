@@ -1,11 +1,11 @@
 
 #pragma once
 #include <raylib.h>
-#include "Vector.h"
-#include "Camera.h"
-#include "Viewport.h"
-#include "cuda_compat.h"
-#include "gpu_scene.h"
+#include "../Vector.h"
+#include "../Camera.h"
+#include "../Viewport.h"
+#include "../cuda_compat.h"
+#include "GpuScene.h"
 
 namespace rt {
 
@@ -20,6 +20,7 @@ struct KernelData {
     int width;
     int height;
    
+    int spp;
 };
 
 void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewport viewport, GpuScene scene);

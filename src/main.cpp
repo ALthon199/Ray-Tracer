@@ -18,9 +18,9 @@
 #include "ImageBuffer.h"
 #include "Material.h"
 #ifdef HAS_CUDA
-#include "cuda_kernels.h"
-#include "gpu_scene.h"
-#include "CudaRenderer.h"
+#include "CUDA_src/cuda_kernels.h"
+#include "CUDA_src/GpuScene.h"
+#include "CUDA_src/CudaRenderer.h"
 
 #endif
 #include <stdlib.h>
@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
         rt::CudaRenderer renderer;
         rt::KernelData kernel_data;
 
-        renderer.initialize(&scene, WINDOW_WIDTH, WINDOW_HEIGHT);
+        renderer.initialize(&scene, WINDOW_WIDTH, WINDOW_HEIGHT, 2);
         
         InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "raylib example - basic window");
         Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
@@ -180,13 +180,11 @@ int main(int argc, char** argv) {
         float dt;
         while (!WindowShouldClose())
         {  
-          
-            dt = 1.0 / GetFPS();
+            dt = GetFrameTime();;
             Vector2 mouse_delta = GetMouseDelta();
-            float length = Vector2Length(mouse_delta);
-            if (length > 0){
-                camera.update_pitch_yaw(-2.0 * dt * mouse_delta.y/length, 2.0 * dt * mouse_delta.x/length);
-            }
+            
+            camera.update_pitch_yaw(-0.5 * dt * mouse_delta.y, 0.5 * dt * mouse_delta.x);
+            
             
             rt::Vec3 forward = camera.get_forward_vector();
             rt::Vec3 right   = camera.get_right_vector();

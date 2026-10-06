@@ -28,9 +28,9 @@ if(CMAKE_CUDA_COMPILER)
     find_package(CUDAToolkit REQUIRED)
 
     target_sources(my_app PRIVATE
-        src/gpu_scene.cu
-        src/cuda_kernels.cu
-        src/CudaRenderer.cu
+        src/CUDA_src/GpuScene.cu
+        src/CUDA_src/cuda_kernels.cu
+        src/CUDA_src/CudaRenderer.cu
     )
 
     target_link_libraries(my_app PRIVATE CUDA::cudart)
