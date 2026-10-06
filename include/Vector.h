@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include <iostream>
-#include "cuda_compat.h"
+#include "cuda/cuda_compat.h"
 
 namespace rt{
 struct Vec3{

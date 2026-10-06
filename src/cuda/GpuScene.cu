@@ -1,6 +1,6 @@
-#include "GpuScene.h"
-#include "../cuda_compat.h"
-#include "../Vector.h"
+#include "cuda/GpuScene.h"
+#include "cuda/cuda_compat.h"
+#include "Vector.h"
 
 namespace rt{
 DEVICE void hit_sphere(GpuHitRecord& record, const GpuSphere& sphere, const Ray& ray){

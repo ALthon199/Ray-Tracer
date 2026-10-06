@@ -18,9 +18,9 @@
 #include "ImageBuffer.h"
 #include "Material.h"
 #ifdef HAS_CUDA
-#include "CUDA_src/cuda_kernels.h"
-#include "CUDA_src/GpuScene.h"
-#include "CUDA_src/CudaRenderer.h"
+#include "cuda/cuda_kernels.h"
+#include "cuda/GpuScene.h"
+#include "cuda/CudaRenderer.h"
 
 #endif
 #include <stdlib.h>

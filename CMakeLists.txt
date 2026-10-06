@@ -8,6 +8,9 @@ endif()
 
 add_executable(my_app)
 target_compile_features(my_app PRIVATE cxx_std_17)
+target_include_directories(my_app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 target_sources(my_app PRIVATE
     src/main.cpp
@@ -28,9 +31,9 @@ if(CMAKE_CUDA_COMPILER)
     find_package(CUDAToolkit REQUIRED)
 
     target_sources(my_app PRIVATE
-        src/CUDA_src/GpuScene.cu
-        src/CUDA_src/cuda_kernels.cu
-        src/CUDA_src/CudaRenderer.cu
+        src/cuda/GpuScene.cu
+        src/cuda/cuda_kernels.cu
+        src/cuda/CudaRenderer.cu
     )
 
     target_link_libraries(my_app PRIVATE CUDA::cudart)

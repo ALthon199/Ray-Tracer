@@ -2,7 +2,7 @@
 
 #include "../Vector.h"
 #include <raylib.h>
-#include "../cuda_compat.h"
+#include "cuda_compat.h"
 
 namespace rt{
 

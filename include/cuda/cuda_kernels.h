@@ -4,7 +4,7 @@
 #include "../Vector.h"
 #include "../Camera.h"
 #include "../Viewport.h"
-#include "../cuda_compat.h"
+#include "cuda_compat.h"
 #include "GpuScene.h"
 
 namespace rt {

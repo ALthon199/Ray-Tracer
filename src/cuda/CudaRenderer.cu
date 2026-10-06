@@ -1,6 +1,6 @@
-#include "CudaRenderer.h"
-#include "GpuScene.h"
-#include "cuda_kernels.h"
+#include "cuda/CudaRenderer.h"
+#include "cuda/GpuScene.h"
+#include "cuda/cuda_kernels.h"
 #include <curand_kernel.h>
 
 namespace rt {
