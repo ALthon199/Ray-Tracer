@@ -33,6 +33,7 @@ __global__ void calculate_pixel_idx(::Color* result, KernelData kernel_data, int
     GpuHitRecord record = GpuHitRecord();
     for (int i = 0; i < scene.spheres_count; i++) {
        hit_sphere(record, scene.spheres[i], ray);
+     
     }    
    
     if (record.time > 0.0f) {

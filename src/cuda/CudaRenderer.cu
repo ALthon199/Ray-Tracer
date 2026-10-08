@@ -5,18 +5,30 @@
 
 namespace rt {
 
-    void CudaRenderer::initialize(const GpuScene* scene, int width, int height, int spp){
+    void CudaRenderer::initialize(GpuScene* scene, int width, int height, int spp){
         this->width = width;
         this->height = height;
         this->spp = spp;
         
-        world.spheres_count = scene->spheres_count;
-        cudaMalloc(&world.spheres, sizeof(GpuSphere) * scene ->spheres_count);
+        device_scene.spheres_count = scene->spheres_count;
+        device_scene.objects_count = scene->objects_count;
+
+        GpuSphere* device_spheres = nullptr;
+        GpuObject* device_objects = nullptr;
+
+        cudaMalloc(&device_spheres, sizeof(GpuSphere) * scene->spheres_count);
+        cudaMalloc(&device_objects, sizeof(GpuObject) * scene->objects_count);
         cudaMalloc(&device_pixels, sizeof(::Color) * width * height);
-        cudaMemcpy(world.spheres, scene->spheres, sizeof(GpuSphere) * scene->spheres_count, cudaMemcpyHostToDevice);
+
+
+        cudaMemcpy(device_objects, scene ->objects, sizeof(GpuObject) * scene->objects_count, cudaMemcpyHostToDevice);
+        cudaMemcpy(device_spheres, scene->spheres, sizeof(GpuSphere) * scene->spheres_count, cudaMemcpyHostToDevice);
+        device_scene.spheres = device_spheres;
+        device_scene.objects = device_objects;
+        device_scene.write_objects = device_objects;
+        device_scene.write_spheres = device_spheres;
     }
 
-  
     __global__ void render_kernel(KernelData kernel_data, GpuScene scene, ::Color* result) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i >= kernel_data.width * kernel_data.height) {
@@ -56,15 +68,19 @@ namespace rt {
             ray.direction.normalize();
 
             GpuHitRecord record = GpuHitRecord();
-            for (int i = 0; i < scene.spheres_count; i++) {
-                hit_sphere(record, scene.spheres[i], ray);
-            }    
-            
+            for (int i = 0; i < scene.objects_count; i++){
+                GpuObject obj = scene.objects[i];
+                if (obj.type == GpuObjectType :: SPHERE){
+                    hit_sphere(record, scene.spheres[obj.index], ray);
+                }
+
+            }
             if (record.time > 0.0f) {
                 pixel += (record.color);
             } else {
                 pixel += (ray.ray_base_color());
             }
+
         }
       
         
@@ -80,7 +96,7 @@ namespace rt {
         int total_pixels = width * height;
         int blocks = (total_pixels + threads - 1) / threads;
 
-        render_kernel<<<blocks, threads>>>(data, world, device_pixels);
+        render_kernel<<<blocks, threads>>>(data, device_scene, device_pixels);
         
         cudaDeviceSynchronize();
         cudaError_t error = cudaDeviceSynchronize();
@@ -89,8 +105,9 @@ namespace rt {
     }
 
     void CudaRenderer::shutdown(){
-        cudaFree(world.spheres);
+        cudaFree(device_scene.write_spheres);
         cudaFree(device_pixels);
+        cudaFree(device_scene.write_objects);
     }
 
 }

@@ -3,6 +3,7 @@
 #include "Vector.h"
 
 namespace rt{
+
 DEVICE void hit_sphere(GpuHitRecord& record, const GpuSphere& sphere, const Ray& ray){
     
     const Vec3& position = sphere.position;
@@ -44,4 +45,20 @@ DEVICE ::Color raylib_color_from_Vec3(Vec3 vec){
 
     return color;
 }
+void HostScene::update_gpu_scene(GpuScene& scene) const{
+    scene.objects = objects.data();
+    scene.objects_count = objects.size();
+    scene.spheres = spheres.data();
+    scene.spheres_count = spheres.size();
+}
+
+void HostScene::add_sphere(GpuSphere sphere){
+    
+    GpuObject object = {GpuObjectType::SPHERE, spheres.size()};
+    spheres.push_back(sphere);
+    objects.push_back(object);
+    std::cout << object.index;
+}
+
+
 }

@@ -153,22 +153,23 @@ int main(int argc, char** argv) {
 #ifdef HAS_CUDA
     else if (cuda_test){
         ppm_filename = "cuda_test.ppm";
-        std::vector<rt::GpuSphere> spheres;
-        spheres.push_back(rt::GpuSphere{rt::Vec3(1, 0.5, -2),rt::Vec3(0, 0, 1), 1.0f, 0});
-        spheres.push_back(rt::GpuSphere{rt::Vec3(1, -200, -2),rt::Vec3(1, 1, 1), 199.0f, 0});
-        spheres.push_back(rt::GpuSphere{rt::Vec3(-10, 3, -6),rt::Vec3(1, 0, 1), 2.0f, 0});
-        spheres.push_back(rt::GpuSphere{rt::Vec3(10, -2, 8),rt::Vec3(0, 1, 1), 6.0f, 0});
+        rt::HostScene host_scene;
+        host_scene.add_sphere(rt::GpuSphere{rt::Vec3(1, 0.5, -2),rt::Vec3(0, 0, 1), 1.0f, 0});
+        host_scene.add_sphere(rt::GpuSphere{rt::Vec3(1, -200, -2),rt::Vec3(1, 1, 1), 199.0f, 0});
+        host_scene.add_sphere(rt::GpuSphere{rt::Vec3(-10, 3, -6),rt::Vec3(1, 0, 1), 2.0f, 0});
+        host_scene.add_sphere(rt::GpuSphere{rt::Vec3(10, -2, 8),rt::Vec3(0, 1, 1), 6.0f, 0});
+
+
         rt::GpuScene scene;
 
-        scene.spheres = spheres.data();
-        scene.spheres_count = spheres.size();
+        host_scene.update_gpu_scene(scene);
 
         Color* host_pixels = (Color*)malloc(sizeof(Color) * WINDOW_HEIGHT * WINDOW_WIDTH);
         
         rt::CudaRenderer renderer;
         rt::KernelData kernel_data;
 
-        renderer.initialize(&scene, WINDOW_WIDTH, WINDOW_HEIGHT, 2);
+        renderer.initialize(&scene, WINDOW_WIDTH, WINDOW_HEIGHT, 1);
         
         InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "raylib example - basic window");
         Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
