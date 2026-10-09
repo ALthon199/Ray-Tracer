@@ -42,31 +42,49 @@ struct GpuTriangle {};
 struct GpuMaterial {};
 
 
-
-// Scene ready to use for GPU
-struct GpuScene {
+// Read only view
+struct GpuView{
     const GpuSphere* spheres;
     size_t spheres_count;
 
     const GpuObject* objects;
     size_t objects_count;
-
-    GpuSphere* write_spheres;
-    GpuObject* write_objects;
 };
+
 
 // Easier to use scene for adding objects
 class HostScene {
     public:
         HostScene() = default;
-        void update_gpu_scene(GpuScene& scene) const;
+        
         void add_sphere(GpuSphere sphere);
-    
+        const std::vector<GpuSphere>& get_spheres() const {
+            return spheres;
+        }
+        const std::vector<GpuObject>& get_objects() const {
+            return objects;
+        }
     private:
         std::vector<GpuSphere> spheres;
-
         // Maintain internal list of all objects for when moving to GPU
         std::vector<GpuObject> objects;
 };
+
+class DeviceScene {
+    public:
+        ~DeviceScene();
+        GpuView view() const;
+        void upload_scene(const HostScene& scene);
+
+    private:
+        GpuSphere* spheres = nullptr;
+        size_t spheres_count;
+
+        GpuObject* objects = nullptr;
+        size_t objects_count;
+        
+       
+};
+
 
 }

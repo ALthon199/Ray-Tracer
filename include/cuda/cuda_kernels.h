@@ -23,6 +23,6 @@ struct KernelData {
     int spp;
 };
 
-void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewport viewport, GpuScene scene);
+void render_pixels(int width, int height, ::Color* pixels, Camera camera, Viewport viewport, DeviceScene scene);
 
 }

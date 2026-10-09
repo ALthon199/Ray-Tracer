@@ -45,19 +45,43 @@ DEVICE ::Color raylib_color_from_Vec3(Vec3 vec){
 
     return color;
 }
-void HostScene::update_gpu_scene(GpuScene& scene) const{
-    scene.objects = objects.data();
-    scene.objects_count = objects.size();
-    scene.spheres = spheres.data();
-    scene.spheres_count = spheres.size();
+
+DeviceScene::~DeviceScene(){
+    if (spheres) {
+        cudaFree(spheres);
+        spheres = nullptr;
+    }
+
+    if (objects) {
+        cudaFree(objects);
+        objects = nullptr;
+    }
 }
+
+
+GpuView DeviceScene::view() const {
+    return GpuView{spheres, spheres_count, objects, objects_count};
+}
+
+
+void DeviceScene::upload_scene(const HostScene& scene){
+    cudaMalloc(&objects, sizeof(GpuObject) * scene.get_objects().size());
+    objects_count = scene.get_objects().size();
+
+    cudaMalloc(&spheres, sizeof(GpuSphere) * scene.get_spheres().size());
+    spheres_count = scene.get_spheres().size();
+    
+    cudaMemcpy(objects, scene.get_objects().data(), sizeof(GpuObject) * scene.get_objects().size(), cudaMemcpyHostToDevice);
+    cudaMemcpy(spheres, scene.get_spheres().data(), sizeof(GpuSphere) * scene.get_spheres().size(), cudaMemcpyHostToDevice);
+}
+
 
 void HostScene::add_sphere(GpuSphere sphere){
     
     GpuObject object = {GpuObjectType::SPHERE, spheres.size()};
     spheres.push_back(sphere);
     objects.push_back(object);
-    std::cout << object.index;
+   
 }
 
 

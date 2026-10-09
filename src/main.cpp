@@ -160,16 +160,17 @@ int main(int argc, char** argv) {
         host_scene.add_sphere(rt::GpuSphere{rt::Vec3(10, -2, 8),rt::Vec3(0, 1, 1), 6.0f, 0});
 
 
-        rt::GpuScene scene;
+        rt::DeviceScene device_scene;
 
-        host_scene.update_gpu_scene(scene);
+        device_scene.upload_scene(host_scene);
+        
 
         Color* host_pixels = (Color*)malloc(sizeof(Color) * WINDOW_HEIGHT * WINDOW_WIDTH);
         
         rt::CudaRenderer renderer;
         rt::KernelData kernel_data;
 
-        renderer.initialize(&scene, WINDOW_WIDTH, WINDOW_HEIGHT, 1);
+        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 1);
         
         InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "raylib example - basic window");
         Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
@@ -222,7 +223,7 @@ int main(int argc, char** argv) {
             kernel_data.viewport_dx = viewport.get_viewport_dx();
             kernel_data.viewport_dy = viewport.get_viewport_dy();
             kernel_data.position = camera.get_position();
-            renderer.render(kernel_data, host_pixels);
+            renderer.render(device_scene.view(), kernel_data, host_pixels);
             
             UpdateTexture(texture, host_pixels);
             BeginDrawing();

@@ -32,7 +32,6 @@ if(CMAKE_CUDA_COMPILER)
 
     target_sources(my_app PRIVATE
         src/cuda/GpuScene.cu
-        src/cuda/cuda_kernels.cu
         src/cuda/CudaRenderer.cu
     )
 
