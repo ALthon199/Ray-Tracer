@@ -4,6 +4,8 @@
 #include "Vector.h"
 
 
+
+
 rt::Vec3 random_unit_vec(){
     return rt::Vec3(random_num(-1.0f, 1.0f), random_num(-1.0f, 1.0f), random_num(-1.0f, 1.0f)).normalize();
 }

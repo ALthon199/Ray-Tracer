@@ -22,7 +22,6 @@ Vec3 metal_reflect(const Vec3& ray_dir, const Vec3& normal){
 }
 
 
-
 bool Metal::scatter(const Ray& ray, const HitRecord& record, ScatterRecord& s_record) const{
     
     const Vec3& hit_pos = ray.ray_at(record.time);

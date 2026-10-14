@@ -58,7 +58,7 @@ namespace rt {
       
        
 
-        return total_lighting * s_record.attentuation;;
+        return total_lighting * s_record.attentuation;
         
   
     }

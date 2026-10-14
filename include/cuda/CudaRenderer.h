@@ -1,5 +1,6 @@
 #pragma once
 
+#include <raylib.h>
 #include "GpuScene.h"
 #include "cuda/cuda_kernels.h"
 namespace rt{
@@ -7,7 +8,7 @@ namespace rt{
 class CudaRenderer {
 
     public:
-        void initialize(int width, int height, int spp);
+        void initialize(int width, int height, int spp, int bounces);
         void render(GpuView device_view, KernelData data, ::Color* host_pixels);    
         void shutdown();      
     
@@ -17,6 +18,7 @@ class CudaRenderer {
         int width;
         int height;
         int spp;
+        int max_bounces;
 
 };
 }

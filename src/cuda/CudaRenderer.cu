@@ -1,18 +1,89 @@
 #include "cuda/CudaRenderer.h"
 #include "cuda/GpuScene.h"
+#include "cuda/GpuMaterial.h"
 #include "cuda/cuda_kernels.h"
+#include "cuda/GpuUtility.h"
 #include <curand_kernel.h>
 
 namespace rt {
 
-    void CudaRenderer::initialize(int width, int height, int spp){
+    void CudaRenderer::initialize(int width, int height, int spp, int bounces){
         this->width = width;
         this->height = height;
         this->spp = spp;
+        this->max_bounces = bounces;
         cudaMalloc(&device_pixels, sizeof(::Color) * width * height);
     }
 
-    __global__ void render_kernel(KernelData kernel_data, GpuView scene, ::Color* result) {
+
+    __device__ Color render_pixel(const Ray& ray, const GpuView& world, int bounces, curandStatePhilox4_32_10_t& state){
+        if (bounces <= 0) return Color();
+
+        GpuHitRecord record = GpuHitRecord();
+        GpuScatterRecord s_record = GpuScatterRecord{Vec3(), Ray(Vec3(), Vec3())};
+        
+        
+      
+
+        Ray curr_ray = ray;
+
+        Color curr_attenuation = Color(1, 1, 1);
+        Color result = Color();
+        bool is_primary = true;
+        for (int i = 0; i < bounces; ++i){
+            Color direct_lighting = Color();
+            bool scattered = false;
+            bool hit = world.ray_hit(curr_ray, record);
+            if (!hit) {
+                result += Color(0.8, 0.8, 0.8) * curr_attenuation;
+                break;
+            }
+
+            Vec3 hit_pos = curr_ray.ray_at(record.time);
+            const GpuMaterial& mat = world.materials[record.mat_index];
+            switch (mat.get_type()){
+                case GpuMaterialType::EMISSIVE:
+                    if (is_primary){
+                        const GpuEmissive& light_src = mat.get_material().emissive;
+                        result += curr_attenuation * (light_src.albedo * light_src.intensity);
+                    }
+                    break;
+                case GpuMaterialType::DIFFUSE:
+                    const Vec3& next_pos = hit_pos.hit_offset(record.normal);
+                    direct_lighting = world.calculate_direct_lighting(next_pos, record.normal, state);
+                    
+                    scattered = mat.scatter(curr_ray, record, s_record, state);
+                    is_primary = false;
+                    break;
+                case GpuMaterialType::METAL: 
+                    direct_lighting = Vec3();
+                    scattered = mat.scatter(curr_ray, record, s_record, state);
+                    if (!scattered){
+                        break;
+                    }
+                    is_primary = true;
+                    break;
+                case GpuMaterialType::DIELECTRIC:
+                    direct_lighting = Vec3();
+                    scattered = mat.scatter(curr_ray, record, s_record, state);
+                    is_primary = true;
+                    break;
+            }   
+
+            if (!scattered){
+                return result;
+            }
+
+            curr_attenuation *= s_record.attentuation;
+            result += direct_lighting * curr_attenuation;
+            curr_ray = s_record.scattered_ray;
+          
+        }
+        return result;
+    }
+
+
+    __global__ void render_kernel(KernelData kernel_data, GpuView scene, ::Color* result, int bounces) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i >= kernel_data.width * kernel_data.height) {
             return;
@@ -20,6 +91,7 @@ namespace rt {
 
         curandStatePhilox4_32_10_t local_state;
         curand_init(1234ULL, i, 0, &local_state);
+
 
         int width = kernel_data.width;
         int height = kernel_data.height;
@@ -50,24 +122,16 @@ namespace rt {
             Ray ray = Ray(kernel_data.position, target - kernel_data.position);
             ray.direction.normalize();
 
-            GpuHitRecord record = GpuHitRecord();
-            for (int i = 0; i < scene.objects_count; i++){
-                GpuObject obj = scene.objects[i];
-                if (obj.type == GpuObjectType :: SPHERE){
-                    hit_sphere(record, scene.spheres[obj.index], ray);
-                }
-
-            }
-            if (record.time > 0.0f) {
-                pixel += (record.color);
-            } else {
-                pixel += (ray.ray_base_color());
-            }
-
+            pixel += render_pixel(ray, scene, bounces, local_state);
         }
-      
         
-        result[i] = raylib_color_from_Vec3(pixel * (1.0/kernel_data.spp));
+        Vec3 final_color = pixel * (1.0f / kernel_data.spp);
+
+        final_color.x = g_clamp(final_color.x, 0.0f, 1.0f);
+        final_color.y = g_clamp(final_color.y, 0.0f, 1.0f);
+        final_color.z = g_clamp(final_color.z, 0.0f, 1.0f);
+
+        result[i] = raylib_color_from_Vec3(final_color);
     }
 
 
@@ -79,11 +143,11 @@ namespace rt {
         int total_pixels = width * height;
         int blocks = (total_pixels + threads - 1) / threads;
 
-        render_kernel<<<blocks, threads>>>(data, device_view, device_pixels);
+        render_kernel<<<blocks, threads>>>(data, device_view, device_pixels, max_bounces);
         
         cudaDeviceSynchronize();
         cudaError_t error = cudaDeviceSynchronize();
-        // printf("%s\n", cudaGetErrorString(error));
+       
         cudaMemcpy(host_pixels, device_pixels, sizeof(::Color) * width * height, cudaMemcpyDeviceToHost);
     }
 

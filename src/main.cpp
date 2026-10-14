@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <raylib.h>
 #include "Sphere.h"
 #include "Triangle.h"
 #include "Mesh.h"
@@ -20,15 +21,14 @@
 #ifdef HAS_CUDA
 #include "cuda/cuda_kernels.h"
 #include "cuda/GpuScene.h"
+#include "cuda/GpuMaterial.h"
 #include "cuda/CudaRenderer.h"
 
 #endif
 #include <stdlib.h>
-#include <raylib.h>
-#include <raymath.h>
-
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 780
+#define MOUSE_SENSITIVITY 0.0025f
 
 
 int main(int argc, char** argv) {
@@ -145,19 +145,47 @@ int main(int argc, char** argv) {
     float viewport_dx = viewport_width/WINDOW_WIDTH;
     
 
-    if (ppm_mode){ 
+    if (ppm_mode && !cuda_test){ 
         rt_renderer.render_frame(world, camera, viewport, pixels);
         output_ppm(ppm_filename, pixels.get_pixels(), WINDOW_WIDTH, WINDOW_HEIGHT);
         return 0;
     }
 #ifdef HAS_CUDA
     else if (cuda_test){
+        
         ppm_filename = "cuda_test.ppm";
         rt::HostScene host_scene;
-        host_scene.add_sphere(rt::GpuSphere{rt::Vec3(1, 0.5, -2),rt::Vec3(0, 0, 1), 1.0f, 0});
-        host_scene.add_sphere(rt::GpuSphere{rt::Vec3(1, -200, -2),rt::Vec3(1, 1, 1), 199.0f, 0});
-        host_scene.add_sphere(rt::GpuSphere{rt::Vec3(-10, 3, -6),rt::Vec3(1, 0, 1), 2.0f, 0});
-        host_scene.add_sphere(rt::GpuSphere{rt::Vec3(10, -2, 8),rt::Vec3(0, 1, 1), 6.0f, 0});
+
+        // GPU materials are value types. Build each material's union payload,
+        // then attach the material when adding the corresponding sphere.
+        rt::GpuMaterialData green_data{};
+        green_data.diffuse = rt::GpuDiffuse{rt::Vec3(0.0f, 0.8f, 0.1f)};
+        rt::GpuMaterial green(rt::GpuMaterialType::DIFFUSE, green_data);
+
+        rt::GpuMaterialData ground_data{};
+        ground_data.diffuse = rt::GpuDiffuse{rt::Vec3(0.7f, 0.7f, 0.7f)};
+        rt::GpuMaterial ground(rt::GpuMaterialType::DIFFUSE, ground_data);
+
+        rt::GpuMaterialData metal_data{};
+        metal_data.metal = rt::GpuMetal{rt::Vec3(0.8f, 0.6f, 0.2f), 0.0f};
+        rt::GpuMaterial metal(rt::GpuMaterialType::METAL, metal_data);
+
+        rt::GpuMaterialData light_data{};
+        light_data.emissive = rt::GpuEmissive{rt::Vec3(1.0f, 1.0f, 1.0f), 8.0f};
+        rt::GpuMaterial light(rt::GpuMaterialType::EMISSIVE, light_data);
+
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(1.0f, 0.5f, -2.0f), rt::Vec3(), 1.0f, 0},
+            green);
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(1.0f, -200.0f, -2.0f), rt::Vec3(), 199.0f, 0},
+            ground);
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(-2.0f, 1.0f, -4.0f), rt::Vec3(), 1.0f, 0},
+            metal);
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(0.0f, 3.0f, -2.0f), rt::Vec3(), 0.75f, 0},
+            light);
 
 
         rt::DeviceScene device_scene;
@@ -170,7 +198,29 @@ int main(int argc, char** argv) {
         rt::CudaRenderer renderer;
         rt::KernelData kernel_data;
 
-        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 1);
+        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 500, 100);
+
+        // Initialize the camera data for a one-shot CUDA PPM render.
+        kernel_data.forward_vector = camera.get_forward_vector();
+        kernel_data.up_vector = camera.get_up_vector();
+        kernel_data.right_vector = camera.get_right_vector();
+        kernel_data.viewport_depth = viewport.get_viewport_depth();
+        kernel_data.viewport_dx = viewport.get_viewport_dx();
+        kernel_data.viewport_dy = viewport.get_viewport_dy();
+        kernel_data.position = camera.get_position();
+
+        if (ppm_mode){
+            renderer.render(device_scene.view(), kernel_data, host_pixels);
+            std::vector<::Color> cuda_pixels(
+                host_pixels,
+                host_pixels + WINDOW_WIDTH * WINDOW_HEIGHT
+            );
+            output_ppm(ppm_filename, cuda_pixels, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+            free(host_pixels);
+            renderer.shutdown();
+            return 0;
+        }
         
         InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "raylib example - basic window");
         Image canvas = GenImageColor(WINDOW_WIDTH, WINDOW_HEIGHT, BLACK);
@@ -185,7 +235,10 @@ int main(int argc, char** argv) {
             dt = GetFrameTime();;
             Vector2 mouse_delta = GetMouseDelta();
             
-            camera.update_pitch_yaw(-0.5 * dt * mouse_delta.y, 0.5 * dt * mouse_delta.x);
+            // Mouse delta is already frame-to-frame movement; do not multiply
+            // it by frame time, or the sensitivity changes with FPS.
+            camera.update_pitch_yaw(-MOUSE_SENSITIVITY * mouse_delta.y,
+                                    MOUSE_SENSITIVITY * mouse_delta.x);
             
             
             rt::Vec3 forward = camera.get_forward_vector();
@@ -255,10 +308,8 @@ int main(int argc, char** argv) {
         while (!WindowShouldClose())
         {  
             Vector2 mouse_delta = GetMouseDelta();
-            float length = Vector2Length(mouse_delta);
-            if (length > 0){
-                camera.update_pitch_yaw(-1.50 * mouse_delta.y/length, 1.50 * mouse_delta.x/length);
-            }
+            camera.update_pitch_yaw(-MOUSE_SENSITIVITY * mouse_delta.y,
+                                    MOUSE_SENSITIVITY * mouse_delta.x);
 
         
             rt::Vec3 forward = camera.get_forward_vector();
