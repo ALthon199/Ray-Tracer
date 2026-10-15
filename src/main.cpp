@@ -170,8 +170,12 @@ int main(int argc, char** argv) {
         metal_data.metal = rt::GpuMetal{rt::Vec3(0.8f, 0.6f, 0.2f), 0.0f};
         rt::GpuMaterial metal(rt::GpuMaterialType::METAL, metal_data);
 
+        rt::GpuMaterialData glass_data{};
+        glass_data.dielectric = rt::GpuDielectric{1.5f};
+        rt::GpuMaterial glass(rt::GpuMaterialType::DIELECTRIC, glass_data);
+
         rt::GpuMaterialData light_data{};
-        light_data.emissive = rt::GpuEmissive{rt::Vec3(1.0f, 1.0f, 1.0f), 8.0f};
+        light_data.emissive = rt::GpuEmissive{rt::Vec3(1.0f, 1.0f, 1.0f), 1.0f};
         rt::GpuMaterial light(rt::GpuMaterialType::EMISSIVE, light_data);
 
         host_scene.add_sphere(
@@ -183,6 +187,9 @@ int main(int argc, char** argv) {
         host_scene.add_sphere(
             rt::GpuSphere{rt::Vec3(-2.0f, 1.0f, -4.0f), rt::Vec3(), 1.0f, 0},
             metal);
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(0.0f, 0.8f, -3.0f), rt::Vec3(), 0.8f, 0},
+            glass);
         host_scene.add_sphere(
             rt::GpuSphere{rt::Vec3(0.0f, 3.0f, -2.0f), rt::Vec3(), 0.75f, 0},
             light);
@@ -198,7 +205,7 @@ int main(int argc, char** argv) {
         rt::CudaRenderer renderer;
         rt::KernelData kernel_data;
 
-        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 500, 100);
+        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 2000, 30);
 
         // Initialize the camera data for a one-shot CUDA PPM render.
         kernel_data.forward_vector = camera.get_forward_vector();
@@ -210,7 +217,7 @@ int main(int argc, char** argv) {
         kernel_data.position = camera.get_position();
 
         if (ppm_mode){
-            renderer.render(device_scene.view(), kernel_data, host_pixels);
+            renderer.render_HD(device_scene.view(), kernel_data, host_pixels);
             std::vector<::Color> cuda_pixels(
                 host_pixels,
                 host_pixels + WINDOW_WIDTH * WINDOW_HEIGHT
@@ -232,6 +239,7 @@ int main(int argc, char** argv) {
         float dt;
         while (!WindowShouldClose())
         {  
+            bool changed_position = false;
             dt = GetFrameTime();;
             Vector2 mouse_delta = GetMouseDelta();
             
@@ -239,7 +247,9 @@ int main(int argc, char** argv) {
             // it by frame time, or the sensitivity changes with FPS.
             camera.update_pitch_yaw(-MOUSE_SENSITIVITY * mouse_delta.y,
                                     MOUSE_SENSITIVITY * mouse_delta.x);
-            
+            if (abs(mouse_delta.y) > 0.0001 || abs(mouse_delta.x) > 0.0001){
+                changed_position = true;
+            }
             
             rt::Vec3 forward = camera.get_forward_vector();
             rt::Vec3 right   = camera.get_right_vector();
@@ -248,19 +258,22 @@ int main(int argc, char** argv) {
 
             if (IsKeyDown(KEY_RIGHT)){
                 camera.update_pos(right.x * dt * 1.50, right.y * dt * 1.50, right.z * dt * 1.50);   
+                changed_position = true;
             }
 
             if (IsKeyDown(KEY_LEFT)){
                 camera.update_pos(-right.x * dt * 1.50, -right.y * dt * 1.50, -right.z * dt * 1.50);
+                changed_position = true;
                 
             }
             if (IsKeyDown(KEY_UP)){
                 camera.update_pos(forward.x * dt * 1.50, forward.y * dt * 1.50, forward.z * dt * 1.50);   
+                changed_position = true;
             }
 
             if (IsKeyDown(KEY_DOWN)){
                 camera.update_pos(-forward.x * dt * 1.50, -forward.y * dt * 1.50, -forward.z * dt * 1.50);
-                
+                changed_position = true;
             }
 
             if (IsKeyPressed(KEY_P)){
@@ -276,7 +289,9 @@ int main(int argc, char** argv) {
             kernel_data.viewport_dx = viewport.get_viewport_dx();
             kernel_data.viewport_dy = viewport.get_viewport_dy();
             kernel_data.position = camera.get_position();
-            renderer.render(device_scene.view(), kernel_data, host_pixels);
+
+            if (changed_position) renderer.render(device_scene.view(), kernel_data, host_pixels, true);
+            else renderer.render(device_scene.view(), kernel_data, host_pixels, false);
             
             UpdateTexture(texture, host_pixels);
             BeginDrawing();

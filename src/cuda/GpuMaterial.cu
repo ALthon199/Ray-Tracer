@@ -94,13 +94,13 @@ namespace rt {
                 const Vec3& hit_pos = ray.ray_at(record.time);
 
                 if (refract_ratio * sin_theta > 1.0f || reflectance > g_random_num(state, 0.0f, 1.0f)) {
-                    Vec3 new_pos = hit_pos.hit_offset(outward_normal);
                     Vec3 new_dir = g_metal_reflect(ray.direction, outward_normal);
+                    Vec3 new_pos = hit_pos.hit_offset(new_dir.normalize());
                     s_record.scattered_ray = Ray(new_pos, new_dir.normalize());
 
                 } else {
-                    Vec3 new_pos = hit_pos.hit_offset(outward_normal);
                     Vec3 new_dir = g_refract(ray.direction, outward_normal, refract_ratio);
+                    Vec3 new_pos = hit_pos.hit_offset(new_dir.normalize());
                     s_record.scattered_ray = Ray(new_pos, new_dir.normalize());
                 }
 

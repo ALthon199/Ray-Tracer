@@ -9,16 +9,19 @@ class CudaRenderer {
 
     public:
         void initialize(int width, int height, int spp, int bounces);
-        void render(GpuView device_view, KernelData data, ::Color* host_pixels);    
+        void render_HD(GpuView device_view, KernelData data, ::Color* host_pixels);   
+        void render(GpuView device_view, KernelData data, ::Color* host_pixels, bool new_frame);    
         void shutdown();      
     
     private:
-   
+        rt::Color* accumulated_sum = nullptr;
         ::Color* device_pixels = nullptr;
         int width;
         int height;
-        int spp;
+        int max_spp;
+        int curr_spp = 0;
         int max_bounces;
+        
 
 };
 }
