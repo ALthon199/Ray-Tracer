@@ -46,7 +46,7 @@ void Triangle::hit(const Ray& ray, HitRecord& record) const{
     }
 }
 void Triangle::hit(const Ray& ray, HitRecord& record, std::shared_ptr<Material> override_material){
-Vec3 E1 = v2 - v1;
+    Vec3 E1 = v2 - v1;
     Vec3 E2 = v3 - v1;
 
     // Normal of triangle

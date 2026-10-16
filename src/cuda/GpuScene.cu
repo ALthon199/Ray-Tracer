@@ -46,6 +46,57 @@ DEVICE void hit_sphere(GpuHitRecord& record, const GpuSphere& sphere, const Ray&
     }
 }
 
+DEVICE Vec3 GpuTriangle::sample_point(curandStatePhilox4_32_10_t& state) const{
+  
+    float a = g_random_num(state, 0.0f,1.0f);
+    float b= g_random_num(state, 0.0f, 1.0f - a);
+    float c = 1.0f - a - b;
+    return (v1 * a) + (v2 * b) + (v3 * c);
+}
+
+
+DEVICE void hit_triangle(GpuHitRecord& record, const GpuTriangle& triangle, const Ray& ray){
+    Vec3 E1 = triangle.v2 - triangle.v1;
+    Vec3 E2 = triangle.v3 - triangle.v1;
+
+    // Normal of triangle
+    Vec3 P = ray.direction.cross(E2);
+    float det = E1.dot(P);
+
+    if (std::abs(det) <= 0.001){
+        return;
+    }
+
+    Vec3 T = ray.origin - triangle.v1;
+    float u = (T.dot(P)) * (1/det);
+    
+    if (u < 0.0f || u > 1.0f){
+        return;
+    }
+
+    Vec3 Q = T.cross(E1);
+    float v = (ray.direction.dot(Q)) * (1/det);
+    if (v < 0.0f || u + v > 1.0f){
+        return;
+    }
+
+    float t = (E2.dot(Q)) * (1/det);
+
+    if (t < 0.0f){
+        return; 
+    }
+
+    if (record.time <= -0.999f || t < record.time){
+        record.time = t;
+        record.normal = E1.cross(E2).normalize();
+
+        if (record.normal.dot(ray.direction) > 0.0f){
+            record.normal = record.normal * -1.0f;
+        }
+        record.mat_index = triangle.material_index;
+    }
+}
+
 DEVICE ::Color raylib_color_from_Vec3(Vec3 vec){
     ::Color color = {
         static_cast<unsigned char>(vec.x * 255.99),
@@ -61,6 +112,11 @@ DeviceScene::~DeviceScene(){
     if (spheres) {
         cudaFree(spheres);
         spheres = nullptr;
+    }
+
+    if (triangles) {
+        cudaFree(triangles);
+        triangles = nullptr;
     }
 
     if (objects) {
@@ -84,6 +140,9 @@ DEVICE bool GpuView::ray_hit(const Ray& ray, GpuHitRecord& record) const {
         const GpuObject& object = objects[i];
         if (object.type == GpuObjectType::SPHERE && object.index < spheres_count) {
             hit_sphere(record, spheres[object.index], ray);
+        }
+        if (object.type == GpuObjectType::TRIANGLE && object.index < triangles_count) {
+            hit_triangle(record, triangles[object.index], ray);
         }
     }
     return record.time > 0.0f;
@@ -128,6 +187,36 @@ DEVICE Color GpuView::calculate_direct_lighting(const Vec3& pos, const Vec3& sur
                 direct_lighting +=  src.albedo * src.intensity * norm_dot_light * attenuation;
                 break;
             }
+
+            case GpuObjectType::TRIANGLE: {
+                if (object.index >= triangles_count) {
+                    break;
+                }
+
+                const GpuTriangle& light = triangles[object.index];
+                Vec3 source = pos;
+                Vec3 target = light.sample_point(state);
+                Vec3 direction = target - source;
+                float dist = direction.magnitude();
+
+                Ray lighting_ray = Ray(source, direction);
+                lighting_ray.direction.normalize();
+
+                bool hit = ray_hit(lighting_ray, light_record);
+                if (!hit) continue;
+                const GpuMaterial& material = materials[light_record.mat_index];
+
+                if (!(material.get_type() == GpuMaterialType::EMISSIVE)) continue;
+            
+                float norm_dot_light = lighting_ray.direction.dot(surface_normal);
+                norm_dot_light = g_clamp(norm_dot_light, 0.0f, 1.0f);
+                float attenuation = 1.0f / (1.0f + 0.1f * dist + 0.01f * dist * dist);
+
+                const GpuEmissive& src = material.get_material().emissive;
+                
+                direct_lighting +=  src.albedo * src.intensity * norm_dot_light * attenuation;
+                break;
+            }
         }
 
         
@@ -139,7 +228,7 @@ DEVICE Color GpuView::calculate_direct_lighting(const Vec3& pos, const Vec3& sur
 
 
 GpuView DeviceScene::view() const {
-    return GpuView{spheres, spheres_count, objects, objects_count, 
+    return GpuView{spheres, spheres_count, triangles, triangles_count, objects, objects_count, 
         materials, materials_count, light_indices, light_count};
 }
 
@@ -152,6 +241,9 @@ void DeviceScene::upload_scene(const HostScene& scene){
     cudaMalloc(&spheres, sizeof(GpuSphere) * scene.get_spheres().size());
     spheres_count = scene.get_spheres().size();
 
+    cudaMalloc(&triangles, sizeof(GpuTriangle) * scene.get_triangles().size());
+    triangles_count = scene.get_triangles().size();
+
     cudaMalloc(&materials, sizeof(GpuMaterial) * scene.get_materials().size());
     materials_count = scene.get_materials().size();
 
@@ -160,6 +252,7 @@ void DeviceScene::upload_scene(const HostScene& scene){
 
     cudaMemcpy(objects, scene.get_objects().data(), sizeof(GpuObject) * scene.get_objects().size(), cudaMemcpyHostToDevice);
     cudaMemcpy(spheres, scene.get_spheres().data(), sizeof(GpuSphere) * scene.get_spheres().size(), cudaMemcpyHostToDevice);
+    cudaMemcpy(triangles, scene.get_triangles().data(), sizeof(GpuTriangle) * scene.get_triangles().size(), cudaMemcpyHostToDevice);
     cudaMemcpy(materials, scene.get_materials().data(),  sizeof(GpuMaterial) * scene.get_materials().size(), cudaMemcpyHostToDevice);
     cudaMemcpy(light_indices, scene.get_light_indices().data(), sizeof(int) * scene.get_light_indices().size(), cudaMemcpyHostToDevice);
 
@@ -177,9 +270,9 @@ std::vector<GpuMaterial> HostScene::get_materials() const {
 void HostScene::add_sphere(GpuSphere sphere, GpuMaterial* material){
     
 
-    auto& kv = materials.find(material);
+    auto kv = materials.find(material);
 
-    if (materials.find(material) != materials.end()){
+    if (kv != materials.end()){
         sphere.material_index = kv -> second;
     }
     else{
@@ -196,7 +289,31 @@ void HostScene::add_sphere(GpuSphere sphere, GpuMaterial* material){
     GpuObject object = {GpuObjectType::SPHERE, spheres.size()};
     spheres.push_back(sphere);
     objects.push_back(object);
-   
+}
+
+
+void HostScene::add_triangle(GpuTriangle triangle, GpuMaterial* material){
+    
+
+    auto kv = materials.find(material);
+
+    if (kv != materials.end()){
+        triangle.material_index = kv -> second;
+    }
+    else{
+        triangle.material_index = materials.size();
+        materials[material] = materials.size();
+    }
+     
+
+    if (material -> get_type() == GpuMaterialType::EMISSIVE){
+        light_indices.push_back(objects.size());
+    }
+
+
+    GpuObject object = {GpuObjectType::TRIANGLE, triangles.size()};
+    triangles.push_back(triangle);
+    objects.push_back(object);
 }
 
 

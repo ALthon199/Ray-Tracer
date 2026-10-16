@@ -32,6 +32,12 @@ struct GpuSphere {
     DEVICE Vec3 sample_point(curandStatePhilox4_32_10_t& state) const;
 };
 
+struct GpuTriangle {
+    Vec3 v1, v2, v3;
+    int material_index;
+
+    DEVICE Vec3 sample_point(curandStatePhilox4_32_10_t& state) const;
+};
 
 struct GpuHitRecord {
     Vec3 normal;
@@ -47,14 +53,19 @@ struct GpuHitRecord {
 };
 
 DEVICE void hit_sphere(GpuHitRecord& record, const GpuSphere& sphere, const Ray& ray);
+DEVICE void hit_triangle(GpuHitRecord& record, const GpuTriangle& triangle, const Ray& ray);
 DEVICE ::Color raylib_color_from_Vec3(Vec3 vec);
-struct GpuTriangle {};
+
 
 
 // Read only view
 struct GpuView {
     const GpuSphere* spheres;
     size_t spheres_count;
+
+    const GpuTriangle* triangles = nullptr;
+    size_t triangles_count;
+
 
     const GpuObject* objects;
     size_t objects_count;
@@ -76,21 +87,30 @@ class HostScene {
         HostScene() = default;
         
         void add_sphere(GpuSphere sphere, GpuMaterial* material);
+        void add_triangle(GpuTriangle triangle, GpuMaterial* material);
+
         const std::vector<GpuSphere>& get_spheres() const {
             return spheres;
         }
+
+        const std::vector<GpuTriangle>get_triangles() const {
+            return triangles;
+        }
+
         const std::vector<GpuObject>& get_objects() const {
             return objects;
         }
+
         std::vector<GpuMaterial> get_materials() const;
+
         const std::vector<int>& get_light_indices() const {
             return light_indices;
         }
     private:
-       
-
+    
         // Maintain internal list of all objects for when moving to GPU
         std::vector<GpuSphere> spheres;
+        std::vector<GpuTriangle> triangles;
 
         // Maintain a map so that materials can be shared
         std::unordered_map<GpuMaterial*, int> materials;
@@ -112,14 +132,16 @@ class DeviceScene {
         GpuSphere* spheres = nullptr;
         size_t spheres_count;
 
+        GpuTriangle* triangles = nullptr;
+        size_t triangles_count;
+
         GpuObject* objects = nullptr;
         size_t objects_count;
 
         int* light_indices = nullptr;
         size_t light_count;
 
-        
-       
+      
 };
 
 

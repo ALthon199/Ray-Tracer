@@ -175,8 +175,15 @@ int main(int argc, char** argv) {
         rt::GpuMaterial glass(rt::GpuMaterialType::DIELECTRIC, glass_data);
 
         rt::GpuMaterialData light_data{};
-        light_data.emissive = rt::GpuEmissive{rt::Vec3(1.0f, 1.0f, 1.0f), 0.4f};
+        light_data.emissive = rt::GpuEmissive{rt::Vec3(1.0f, 1.0f, 1.0f), 1.0f};
         rt::GpuMaterial light(rt::GpuMaterialType::EMISSIVE, light_data);
+
+        rt::GpuMaterialData triangle_data{};
+        triangle_data.diffuse = rt::GpuDiffuse{rt::Vec3(0.05f, 0.1f, 0.8f)};
+        rt::GpuMaterial triangle_material(
+            rt::GpuMaterialType::DIFFUSE,
+            triangle_data
+        );
 
         host_scene.add_sphere(
             rt::GpuSphere{rt::Vec3(3.0f, 0.0f, -6.0f), rt::Vec3(), 1.0f, 0},
@@ -193,6 +200,17 @@ int main(int argc, char** argv) {
         host_scene.add_sphere(
             rt::GpuSphere{rt::Vec3(0.0f, 4.0f, -4.0f), rt::Vec3(), 0.75f, 0},
             &light);
+
+        // A diffuse triangle placed behind the glass gives refraction a
+        // high-contrast shape to reveal.
+        host_scene.add_triangle(
+            rt::GpuTriangle{
+                rt::Vec3(-1.5f, -1.0f, -8.0f),
+                rt::Vec3( 1.5f, -1.0f, -8.0f),
+                rt::Vec3( 0.0f,  1.5f, -8.0f),
+                0
+            },
+            &triangle_material);
 
 
         rt::DeviceScene device_scene;

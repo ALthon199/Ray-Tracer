@@ -35,7 +35,7 @@ namespace rt {
             bool scattered = false;
             bool hit = world.ray_hit(curr_ray, record);
             if (!hit) {
-                result += Color(0.8, 0.8, 0.8) * curr_attenuation;
+                result += Color(0.2, 0.2, 0.2) * curr_attenuation;
                 break;
             }
 
