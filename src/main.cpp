@@ -175,24 +175,24 @@ int main(int argc, char** argv) {
         rt::GpuMaterial glass(rt::GpuMaterialType::DIELECTRIC, glass_data);
 
         rt::GpuMaterialData light_data{};
-        light_data.emissive = rt::GpuEmissive{rt::Vec3(1.0f, 1.0f, 1.0f), 1.0f};
+        light_data.emissive = rt::GpuEmissive{rt::Vec3(1.0f, 1.0f, 1.0f), 0.4f};
         rt::GpuMaterial light(rt::GpuMaterialType::EMISSIVE, light_data);
 
         host_scene.add_sphere(
-            rt::GpuSphere{rt::Vec3(1.0f, 0.5f, -2.0f), rt::Vec3(), 1.0f, 0},
-            green);
+            rt::GpuSphere{rt::Vec3(3.0f, 0.0f, -6.0f), rt::Vec3(), 1.0f, 0},
+            &green);
         host_scene.add_sphere(
-            rt::GpuSphere{rt::Vec3(1.0f, -200.0f, -2.0f), rt::Vec3(), 199.0f, 0},
-            ground);
+            rt::GpuSphere{rt::Vec3(0.0f, -200.0f, -6.0f), rt::Vec3(), 199.0f, 0},
+            &ground);
         host_scene.add_sphere(
-            rt::GpuSphere{rt::Vec3(-2.0f, 1.0f, -4.0f), rt::Vec3(), 1.0f, 0},
-            metal);
+            rt::GpuSphere{rt::Vec3(-3.0f, 0.0f, -6.0f), rt::Vec3(), 1.0f, 0},
+            &metal);
         host_scene.add_sphere(
-            rt::GpuSphere{rt::Vec3(0.0f, 0.8f, -3.0f), rt::Vec3(), 0.8f, 0},
-            glass);
+            rt::GpuSphere{rt::Vec3(0.0f, 0.0f, -6.0f), rt::Vec3(), 1.0f, 0},
+            &glass);
         host_scene.add_sphere(
-            rt::GpuSphere{rt::Vec3(0.0f, 3.0f, -2.0f), rt::Vec3(), 0.75f, 0},
-            light);
+            rt::GpuSphere{rt::Vec3(0.0f, 4.0f, -4.0f), rt::Vec3(), 0.75f, 0},
+            &light);
 
 
         rt::DeviceScene device_scene;
@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
         rt::CudaRenderer renderer;
         rt::KernelData kernel_data;
 
-        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 2000, 30);
+        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 2000, 10);
 
         // Initialize the camera data for a one-shot CUDA PPM render.
         kernel_data.forward_vector = camera.get_forward_vector();

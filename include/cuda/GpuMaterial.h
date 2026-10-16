@@ -31,6 +31,7 @@ struct GpuEmissive {
 
 union GpuMaterialData{
     HD GpuMaterialData() {} 
+
     GpuDiffuse diffuse;
     GpuMetal metal;
     GpuDielectric dielectric;
@@ -44,10 +45,16 @@ struct GpuScatterRecord {
 
 class GpuMaterial {
     public:
+        HD GpuMaterial() = default;
         HD GpuMaterial(GpuMaterialType type, GpuMaterialData material_data);
         HD GpuMaterialType get_type() const;
         DEVICE bool scatter(const Ray& ray, const GpuHitRecord& record, GpuScatterRecord& s_record, curandStatePhilox4_32_10_t& state) const;
         HD const GpuMaterialData& get_material() const;
+        HD GpuMaterial& operator=(const GpuMaterial& other){
+            type = other.type;
+            material_data = other.material_data;
+            return *this;
+        }
     private:
         GpuMaterialType type;
         GpuMaterialData material_data;

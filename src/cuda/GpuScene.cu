@@ -164,17 +164,36 @@ void DeviceScene::upload_scene(const HostScene& scene){
     cudaMemcpy(light_indices, scene.get_light_indices().data(), sizeof(int) * scene.get_light_indices().size(), cudaMemcpyHostToDevice);
 
 }
+std::vector<GpuMaterial> HostScene::get_materials() const {
+    std::vector<GpuMaterial> flattend_materials(materials.size());
 
+    for (const auto& kv : materials){
+        flattend_materials[kv.second] = *kv.first;
+    }
 
-void HostScene::add_sphere(GpuSphere sphere, GpuMaterial material){
+    return flattend_materials;
+}
+
+void HostScene::add_sphere(GpuSphere sphere, GpuMaterial* material){
     
-    sphere.material_index = materials.size();
-    GpuObject object = {GpuObjectType::SPHERE, spheres.size()};
-    
-    if (material.get_type() == GpuMaterialType::EMISSIVE){
+
+    auto& kv = materials.find(material);
+
+    if (materials.find(material) != materials.end()){
+        sphere.material_index = kv -> second;
+    }
+    else{
+        sphere.material_index = materials.size();
+        materials[material] = materials.size();
+    }
+     
+
+    if (material -> get_type() == GpuMaterialType::EMISSIVE){
         light_indices.push_back(objects.size());
     }
-    materials.push_back(material);
+
+
+    GpuObject object = {GpuObjectType::SPHERE, spheres.size()};
     spheres.push_back(sphere);
     objects.push_back(object);
    

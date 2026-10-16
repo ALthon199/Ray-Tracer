@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vector.h"
+#include <unordered_map>
 #include <curand_kernel.h>
 #include <vector>
 #include <raylib.h>
@@ -74,16 +75,14 @@ class HostScene {
     public:
         HostScene() = default;
         
-        void add_sphere(GpuSphere sphere, GpuMaterial material);
+        void add_sphere(GpuSphere sphere, GpuMaterial* material);
         const std::vector<GpuSphere>& get_spheres() const {
             return spheres;
         }
         const std::vector<GpuObject>& get_objects() const {
             return objects;
         }
-        const std::vector<GpuMaterial>& get_materials() const {
-            return materials;
-        }
+        std::vector<GpuMaterial> get_materials() const;
         const std::vector<int>& get_light_indices() const {
             return light_indices;
         }
@@ -92,7 +91,9 @@ class HostScene {
 
         // Maintain internal list of all objects for when moving to GPU
         std::vector<GpuSphere> spheres;
-        std::vector<GpuMaterial> materials;
+
+        // Maintain a map so that materials can be shared
+        std::unordered_map<GpuMaterial*, int> materials;
 
         std::vector<GpuObject> objects;
         std::vector<int> light_indices;

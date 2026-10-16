@@ -7,22 +7,23 @@ namespace rt {
         (this->type) = type;
         switch(type) {
             case GpuMaterialType::EMISSIVE:
-                material_data = data;
+                material_data.emissive = data.emissive;
                 break;
             case GpuMaterialType::DIFFUSE:
-                material_data = data;
+                material_data.diffuse = data.diffuse;
                 break;
             case GpuMaterialType::METAL:
-                material_data = data;
+                material_data.metal = data.metal;
                 break;
             case GpuMaterialType::DIELECTRIC:
-                material_data = data;
+                material_data.dielectric = data.dielectric;
                 break;
             default:
                 printf("NOT VALID MATERIAL");;
                 break;
         }   
     }
+
 
     HD GpuMaterialType GpuMaterial::get_type() const {
         return type;
