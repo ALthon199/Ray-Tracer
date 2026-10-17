@@ -18,9 +18,6 @@ namespace rt {
             case GpuMaterialType::DIELECTRIC:
                 material_data.dielectric = data.dielectric;
                 break;
-            default:
-                printf("NOT VALID MATERIAL");;
-                break;
         }   
     }
 

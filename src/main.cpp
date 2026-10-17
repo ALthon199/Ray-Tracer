@@ -23,7 +23,8 @@
 #include "cuda/GpuScene.h"
 #include "cuda/GpuMaterial.h"
 #include "cuda/CudaRenderer.h"
-
+#include "cuda/GpuPrimitives.h"
+#include "cuda/GpuMesh.h"
 #endif
 #include <stdlib.h>
 #define WINDOW_WIDTH 1200
@@ -120,16 +121,6 @@ int main(int argc, char** argv) {
     world.add_hittable(std::make_unique<rt::Mesh>(std::move(faces), diffuse_teal));
 
 
-
-
-
-
-
-
-
-
-
-
     rt::Viewport viewport = rt::Viewport(0.8, WINDOW_WIDTH, WINDOW_HEIGHT);
     rt::ImageBuffer pixels = rt::ImageBuffer(WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -185,6 +176,9 @@ int main(int argc, char** argv) {
             triangle_data
         );
 
+        rt::GpuMaterialData none_data{};
+        rt::GpuMaterial none_material(rt::GpuMaterialType::NONE, none_data);
+
         host_scene.add_sphere(
             rt::GpuSphere{rt::Vec3(3.0f, 0.0f, -6.0f), rt::Vec3(), 1.0f, 0},
             &green);
@@ -201,18 +195,34 @@ int main(int argc, char** argv) {
             rt::GpuSphere{rt::Vec3(0.0f, 4.0f, -4.0f), rt::Vec3(), 0.75f, 0},
             &light);
 
-        // A diffuse triangle placed behind the glass gives refraction a
-        // high-contrast shape to reveal.
-        host_scene.add_triangle(
-            rt::GpuTriangle{
-                rt::Vec3(-1.5f, -1.0f, -8.0f),
-                rt::Vec3( 1.5f, -1.0f, -8.0f),
-                rt::Vec3( 0.0f,  1.5f, -8.0f),
-                0
-            },
-            &triangle_material);
+        // A cube mesh behind the glass: six faces, two triangles per face.
+        rt::HostMesh cube_mesh;
+        const rt::Vec3 c(0.0f, 0.0f, -10.0f);
+        const float h = 1.25f;
+        const rt::Vec3 p000(c.x - h, c.y - h, c.z - h);
+        const rt::Vec3 p001(c.x - h, c.y - h, c.z + h);
+        const rt::Vec3 p010(c.x - h, c.y + h, c.z - h);
+        const rt::Vec3 p011(c.x - h, c.y + h, c.z + h);
+        const rt::Vec3 p100(c.x + h, c.y - h, c.z - h);
+        const rt::Vec3 p101(c.x + h, c.y - h, c.z + h);
+        const rt::Vec3 p110(c.x + h, c.y + h, c.z - h);
+        const rt::Vec3 p111(c.x + h, c.y + h, c.z + h);
 
+        auto add_quad = [&](const rt::Vec3& a, const rt::Vec3& b,
+                            const rt::Vec3& d, const rt::Vec3& e,
+                            const rt::GpuMaterial* material) {
+            cube_mesh.add_triangle(rt::GpuTriangle{a, b, d, 0}, material);
+            cube_mesh.add_triangle(rt::GpuTriangle{a, d, e, 0}, material);
+        };
 
+        add_quad(p000, p100, p110, p010, &metal);           // back
+        add_quad(p001, p011, p111, p101, &glass);           // front
+        add_quad(p000, p010, p011, p001, &green);           // left
+        add_quad(p100, p101, p111, p110, &triangle_material);// right
+        add_quad(p010, p110, p111, p011, &none_material);   // top: override
+        add_quad(p000, p001, p101, p100, &ground);          // bottom
+
+        host_scene.add_mesh(cube_mesh, &triangle_material);
         rt::DeviceScene device_scene;
 
         device_scene.upload_scene(host_scene);

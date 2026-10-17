@@ -3,15 +3,11 @@
 #include "cuda/cuda_compat.h"
 #include "cuda/GpuMaterial.h"
 #include "cuda/GpuUtility.h"
+#include "cuda/GpuPrimitives.h"
 #include <curand_kernel.h>
 #include "Vector.h"
 
 namespace rt{
-
-DEVICE Vec3 GpuSphere::sample_point(curandStatePhilox4_32_10_t& state) const{
-    Vec3 unit_vec = g_random_unit_vec(state);
-    return position + unit_vec * radius;
-}
 
 // Returns true on hit and updates record, returns false otherwise
 DEVICE void hit_sphere(GpuHitRecord& record, const GpuSphere& sphere, const Ray& ray){
@@ -44,14 +40,6 @@ DEVICE void hit_sphere(GpuHitRecord& record, const GpuSphere& sphere, const Ray&
         record.time = t;
         record.normal = unit;
     }
-}
-
-DEVICE Vec3 GpuTriangle::sample_point(curandStatePhilox4_32_10_t& state) const{
-  
-    float a = g_random_num(state, 0.0f,1.0f);
-    float b= g_random_num(state, 0.0f, 1.0f - a);
-    float c = 1.0f - a - b;
-    return (v1 * a) + (v2 * b) + (v3 * c);
 }
 
 
@@ -109,6 +97,11 @@ DEVICE ::Color raylib_color_from_Vec3(Vec3 vec){
 }
 
 DeviceScene::~DeviceScene(){
+    for (GpuTriangle* faces : mesh_face_allocations) {
+        cudaFree(faces);
+    }
+    mesh_face_allocations.clear();
+
     if (spheres) {
         cudaFree(spheres);
         spheres = nullptr;
@@ -143,6 +136,16 @@ DEVICE bool GpuView::ray_hit(const Ray& ray, GpuHitRecord& record) const {
         }
         if (object.type == GpuObjectType::TRIANGLE && object.index < triangles_count) {
             hit_triangle(record, triangles[object.index], ray);
+        }
+        if (object.type == GpuObjectType::MESH && object.index < meshes_count) {
+            const GpuMeshData& mesh = meshes[object.index];
+            for (size_t face = 0; face < mesh.tri_count; ++face) {
+                const float previous_time = record.time;
+                hit_triangle(record, triangles[mesh.tri_start + face], ray);
+                if (record.time != previous_time) {
+                    record.mat_index = triangles[mesh.tri_start + face].material_index;
+                }
+            }
         }
     }
     return record.time > 0.0f;
@@ -228,8 +231,8 @@ DEVICE Color GpuView::calculate_direct_lighting(const Vec3& pos, const Vec3& sur
 
 
 GpuView DeviceScene::view() const {
-    return GpuView{spheres, spheres_count, triangles, triangles_count, objects, objects_count, 
-        materials, materials_count, light_indices, light_count};
+    return GpuView{spheres, spheres_count, triangles, triangles_count, meshes, meshes_count,
+        objects, objects_count, materials, materials_count, light_indices, light_count};
 }
 
 
@@ -256,6 +259,13 @@ void DeviceScene::upload_scene(const HostScene& scene){
     cudaMemcpy(materials, scene.get_materials().data(),  sizeof(GpuMaterial) * scene.get_materials().size(), cudaMemcpyHostToDevice);
     cudaMemcpy(light_indices, scene.get_light_indices().data(), sizeof(int) * scene.get_light_indices().size(), cudaMemcpyHostToDevice);
 
+    meshes_count = scene.get_meshes().size();
+    if (meshes_count > 0) {
+        cudaMalloc(&meshes, sizeof(GpuMeshData) * meshes_count);
+        cudaMemcpy(meshes, scene.get_meshes().data(),
+                   sizeof(GpuMeshData) * meshes_count,
+                   cudaMemcpyHostToDevice);
+    }
 }
 std::vector<GpuMaterial> HostScene::get_materials() const {
     std::vector<GpuMaterial> flattend_materials(materials.size());
@@ -313,6 +323,31 @@ void HostScene::add_triangle(GpuTriangle triangle, GpuMaterial* material){
 
     GpuObject object = {GpuObjectType::TRIANGLE, triangles.size()};
     triangles.push_back(triangle);
+    objects.push_back(object);
+}
+
+
+void HostScene::add_mesh(HostMesh mesh, GpuMaterial* override_mat){
+
+    // Add all triangles of mesh to scene triangels
+    // Track how many triangles and where the triangles start
+    
+    size_t tri_start = triangles.size();
+    size_t tri_count = mesh.get_triangles().size();
+    const std::vector<GpuTriangle>& mesh_triangles = mesh.get_triangles();
+    const std::vector<const GpuMaterial*>& mesh_materials = mesh.get_materials();
+    for (size_t i = 0; i < tri_count; ++i){
+        const GpuMaterial* material = mesh_materials[i];
+        GpuMaterial* selected_material = override_mat;
+        if ( material->get_type() != GpuMaterialType::NONE) {
+            selected_material = const_cast<GpuMaterial*>(material);
+        }
+        add_triangle(mesh_triangles[i], selected_material);
+    }
+
+
+    GpuObject object = {GpuObjectType::MESH, meshes.size()};
+    meshes.push_back(GpuMeshData{tri_start, tri_count});
     objects.push_back(object);
 }
 

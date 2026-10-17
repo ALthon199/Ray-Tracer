@@ -5,7 +5,10 @@
 #include <curand_kernel.h>
 #include <vector>
 #include <raylib.h>
-#include "cuda_compat.h"
+#include "cuda/cuda_compat.h"
+#include "cuda/GpuPrimitives.h"
+#include "cuda/GpuMesh.h"
+
 
 namespace rt {
 class GpuMaterial;
@@ -20,23 +23,6 @@ enum class GpuObjectType {
 struct GpuObject {
     GpuObjectType type;
     size_t index;
-};
-
-// Seperate material and material index, so eventually materials can be reused
-struct GpuSphere {
-    Vec3 position;
-    Color color;
-    float radius;
-    int material_index;
-    
-    DEVICE Vec3 sample_point(curandStatePhilox4_32_10_t& state) const;
-};
-
-struct GpuTriangle {
-    Vec3 v1, v2, v3;
-    int material_index;
-
-    DEVICE Vec3 sample_point(curandStatePhilox4_32_10_t& state) const;
 };
 
 struct GpuHitRecord {
@@ -63,9 +49,11 @@ struct GpuView {
     const GpuSphere* spheres;
     size_t spheres_count;
 
-    const GpuTriangle* triangles = nullptr;
+    const GpuTriangle* triangles;
     size_t triangles_count;
 
+    const GpuMeshData* meshes;
+    size_t meshes_count;
 
     const GpuObject* objects;
     size_t objects_count;
@@ -88,6 +76,7 @@ class HostScene {
         
         void add_sphere(GpuSphere sphere, GpuMaterial* material);
         void add_triangle(GpuTriangle triangle, GpuMaterial* material);
+        void add_mesh(HostMesh mesh, GpuMaterial* material);
 
         const std::vector<GpuSphere>& get_spheres() const {
             return spheres;
@@ -101,6 +90,10 @@ class HostScene {
             return objects;
         }
 
+        const std::vector<GpuMeshData>& get_meshes() const {
+            return meshes;
+        }
+
         std::vector<GpuMaterial> get_materials() const;
 
         const std::vector<int>& get_light_indices() const {
@@ -111,9 +104,10 @@ class HostScene {
         // Maintain internal list of all objects for when moving to GPU
         std::vector<GpuSphere> spheres;
         std::vector<GpuTriangle> triangles;
+        std::vector<GpuMeshData> meshes;
 
         // Maintain a map so that materials can be shared
-        std::unordered_map<GpuMaterial*, int> materials;
+        std::unordered_map<const GpuMaterial*, int> materials;
 
         std::vector<GpuObject> objects;
         std::vector<int> light_indices;
@@ -134,6 +128,10 @@ class DeviceScene {
 
         GpuTriangle* triangles = nullptr;
         size_t triangles_count;
+
+        GpuMeshData* meshes = nullptr;
+        size_t meshes_count;
+        std::vector<GpuTriangle*> mesh_face_allocations;
 
         GpuObject* objects = nullptr;
         size_t objects_count;

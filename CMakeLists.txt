@@ -35,6 +35,7 @@ if(CMAKE_CUDA_COMPILER)
         src/cuda/CudaRenderer.cu
         src/cuda/GpuMaterial.cu
         src/cuda/GpuUtility.cu
+        src/cuda/GpuPrimitives.cu
     )
 
     target_link_libraries(my_app PRIVATE CUDA::cudart)

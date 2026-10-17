@@ -8,7 +8,8 @@ enum class GpuMaterialType {
     DIFFUSE,
     METAL,
     DIELECTRIC,
-    EMISSIVE
+    EMISSIVE,
+    NONE
 };
 
 struct GpuDiffuse {
