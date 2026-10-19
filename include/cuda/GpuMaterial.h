@@ -46,7 +46,7 @@ struct GpuScatterRecord {
 
 class GpuMaterial {
     public:
-        HD GpuMaterial() = default;
+        HD GpuMaterial();
         HD GpuMaterial(GpuMaterialType type, GpuMaterialData material_data);
         HD GpuMaterialType get_type() const;
         DEVICE bool scatter(const Ray& ray, const GpuHitRecord& record, GpuScatterRecord& s_record, curandStatePhilox4_32_10_t& state) const;

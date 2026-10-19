@@ -74,9 +74,9 @@ class HostScene {
     public:
         HostScene() = default;
         
-        void add_sphere(GpuSphere sphere, GpuMaterial* material);
-        void add_triangle(GpuTriangle triangle, GpuMaterial* material);
-        void add_mesh(HostMesh mesh, GpuMaterial* material);
+        void add_sphere(GpuSphere sphere, const GpuMaterial* material);
+        void add_triangle(GpuTriangle triangle, const GpuMaterial* material);
+        void add_mesh(HostMesh mesh, const GpuMaterial* material);
 
         const std::vector<GpuSphere>& get_spheres() const {
             return spheres;

@@ -2,7 +2,9 @@
 #include "cuda/GpuUtility.h"
 #include "cuda/cuda_compat.h"
 namespace rt {
-
+    HD GpuMaterial::GpuMaterial(){
+        (this->type) = GpuMaterialType::NONE;
+    }
     HD GpuMaterial::GpuMaterial(GpuMaterialType type, GpuMaterialData data){
         (this->type) = type;
         switch(type) {

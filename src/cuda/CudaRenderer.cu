@@ -41,6 +41,7 @@ namespace rt {
 
             Vec3 hit_pos = curr_ray.ray_at(record.time);
             const GpuMaterial& mat = world.materials[record.mat_index];
+            
             switch (mat.get_type()){
                 case GpuMaterialType::EMISSIVE:
                     if (is_primary){
@@ -105,9 +106,6 @@ namespace rt {
         float dx = kernel_data.viewport_dx;
         float dy = kernel_data.viewport_dy;
         float depth = kernel_data.viewport_depth;
-        
-       
-        
             
         float rx = curand_uniform(&local_state);
         float ry = curand_uniform(&local_state);
@@ -133,7 +131,6 @@ namespace rt {
         if (is_new_frame) accumulated_frame[i] = pixel;
         else accumulated_frame[i] += pixel;
         
-      
         result[i] = raylib_color_from_Vec3(accumulated_frame[i] * (1.0/kernel_data.spp));
     }
 
@@ -154,6 +151,9 @@ namespace rt {
             render_kernel<<<blocks, threads>>>(data, device_view, accumulated_sum, device_pixels, max_bounces, false);
         }
         cudaDeviceSynchronize();
+        // cudaError_t error = cudaGetLastError();
+        // std::cerr << cudaGetErrorString(error) << '\n';
+        
         cudaMemcpy(host_pixels, device_pixels, sizeof(::Color) * width * height, cudaMemcpyDeviceToHost);
     }
     void CudaRenderer::render(GpuView device_view, KernelData data, ::Color* host_pixels, bool is_new_frame) {
@@ -179,7 +179,8 @@ namespace rt {
         render_kernel<<<blocks, threads>>>(data, device_view, accumulated_sum, device_pixels, max_bounces, is_new_frame);
         
         cudaDeviceSynchronize();
-        cudaError_t error = cudaDeviceSynchronize();
+        // cudaError_t error = cudaGetLastError();
+        // std::cerr << cudaGetErrorString(error) << '\n';
        
         cudaMemcpy(host_pixels, device_pixels, sizeof(::Color) * width * height, cudaMemcpyDeviceToHost);
     }

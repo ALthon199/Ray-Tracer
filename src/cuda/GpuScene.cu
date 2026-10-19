@@ -85,6 +85,7 @@ DEVICE void hit_triangle(GpuHitRecord& record, const GpuTriangle& triangle, cons
     }
 }
 
+
 DEVICE ::Color raylib_color_from_Vec3(Vec3 vec){
     ::Color color = {
         static_cast<unsigned char>(vec.x * 255.99),
@@ -277,7 +278,7 @@ std::vector<GpuMaterial> HostScene::get_materials() const {
     return flattend_materials;
 }
 
-void HostScene::add_sphere(GpuSphere sphere, GpuMaterial* material){
+void HostScene::add_sphere(GpuSphere sphere, const GpuMaterial* material){
     
 
     auto kv = materials.find(material);
@@ -302,7 +303,7 @@ void HostScene::add_sphere(GpuSphere sphere, GpuMaterial* material){
 }
 
 
-void HostScene::add_triangle(GpuTriangle triangle, GpuMaterial* material){
+void HostScene::add_triangle(GpuTriangle triangle, const GpuMaterial* material){
     
 
     auto kv = materials.find(material);
@@ -327,7 +328,7 @@ void HostScene::add_triangle(GpuTriangle triangle, GpuMaterial* material){
 }
 
 
-void HostScene::add_mesh(HostMesh mesh, GpuMaterial* override_mat){
+void HostScene::add_mesh(HostMesh mesh, const GpuMaterial* override_mat){
 
     // Add all triangles of mesh to scene triangels
     // Track how many triangles and where the triangles start
@@ -338,9 +339,9 @@ void HostScene::add_mesh(HostMesh mesh, GpuMaterial* override_mat){
     const std::vector<const GpuMaterial*>& mesh_materials = mesh.get_materials();
     for (size_t i = 0; i < tri_count; ++i){
         const GpuMaterial* material = mesh_materials[i];
-        GpuMaterial* selected_material = override_mat;
-        if ( material->get_type() != GpuMaterialType::NONE) {
-            selected_material = const_cast<GpuMaterial*>(material);
+        const GpuMaterial* selected_material = override_mat;
+        if (material != nullptr && material->get_type() != GpuMaterialType::NONE) {
+            selected_material = material;
         }
         add_triangle(mesh_triangles[i], selected_material);
     }

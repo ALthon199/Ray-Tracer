@@ -4,6 +4,7 @@
 #include "cuda/GpuPrimitives.h"
 #include <curand_kernel.h>
 #include <vector>
+#include <string>
 
 
 namespace rt {
@@ -18,6 +19,9 @@ struct GpuMeshData {
 // Easy to use host for adding triangles and meshes
 class HostMesh{
     public:
+        HostMesh() = default;
+        HostMesh(std::string file_name);
+
         void add_triangle(const GpuTriangle& tri, const GpuMaterial* material){
             faces.push_back(tri);
             materials.push_back(material);

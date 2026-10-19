@@ -176,6 +176,18 @@ int main(int argc, char** argv) {
             triangle_data
         );
 
+        rt::GpuMaterialData red_data{};
+        red_data.diffuse = rt::GpuDiffuse{rt::Vec3(0.85f, 0.05f, 0.03f)};
+        rt::GpuMaterial red(rt::GpuMaterialType::DIFFUSE, red_data);
+
+        rt::GpuMaterialData blue_data{};
+        blue_data.diffuse = rt::GpuDiffuse{rt::Vec3(0.03f, 0.15f, 0.9f)};
+        rt::GpuMaterial blue(rt::GpuMaterialType::DIFFUSE, blue_data);
+
+        rt::GpuMaterialData rough_metal_data{};
+        rough_metal_data.metal = rt::GpuMetal{rt::Vec3(0.75f, 0.78f, 0.85f), 0.25f};
+        rt::GpuMaterial rough_metal(rt::GpuMaterialType::METAL, rough_metal_data);
+
         rt::GpuMaterialData none_data{};
         rt::GpuMaterial none_material(rt::GpuMaterialType::NONE, none_data);
 
@@ -195,36 +207,26 @@ int main(int argc, char** argv) {
             rt::GpuSphere{rt::Vec3(0.0f, 4.0f, -4.0f), rt::Vec3(), 0.75f, 0},
             &light);
 
-        // A cube mesh behind the glass: six faces, two triangles per face.
-        rt::HostMesh cube_mesh;
-        const rt::Vec3 c(0.0f, 0.0f, -10.0f);
-        const float h = 1.25f;
-        const rt::Vec3 p000(c.x - h, c.y - h, c.z - h);
-        const rt::Vec3 p001(c.x - h, c.y - h, c.z + h);
-        const rt::Vec3 p010(c.x - h, c.y + h, c.z - h);
-        const rt::Vec3 p011(c.x - h, c.y + h, c.z + h);
-        const rt::Vec3 p100(c.x + h, c.y - h, c.z - h);
-        const rt::Vec3 p101(c.x + h, c.y - h, c.z + h);
-        const rt::Vec3 p110(c.x + h, c.y + h, c.z - h);
-        const rt::Vec3 p111(c.x + h, c.y + h, c.z + h);
+        // A small material test arrangement in the middle distance.
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(-2.0f, -0.15f, -9.0f), rt::Vec3(), 0.85f, 0},
+            &red);
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(2.0f, -0.15f, -9.0f), rt::Vec3(), 0.85f, 0},
+            &blue);
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(-2.0f, 1.65f, -9.0f), rt::Vec3(), 0.55f, 0},
+            &rough_metal);
+        host_scene.add_sphere(
+            rt::GpuSphere{rt::Vec3(2.0f, 1.65f, -9.0f), rt::Vec3(), 0.55f, 0},
+            &glass);
 
-        auto add_quad = [&](const rt::Vec3& a, const rt::Vec3& b,
-                            const rt::Vec3& d, const rt::Vec3& e,
-                            const rt::GpuMaterial* material) {
-            cube_mesh.add_triangle(rt::GpuTriangle{a, b, d, 0}, material);
-            cube_mesh.add_triangle(rt::GpuTriangle{a, d, e, 0}, material);
-        };
-
-        add_quad(p000, p100, p110, p010, &metal);           // back
-        add_quad(p001, p011, p111, p101, &glass);           // front
-        add_quad(p000, p010, p011, p001, &green);           // left
-        add_quad(p100, p101, p111, p110, &triangle_material);// right
-        add_quad(p010, p110, p111, p011, &none_material);   // top: override
-        add_quad(p000, p001, p101, p100, &ground);          // bottom
-
-        host_scene.add_mesh(cube_mesh, &triangle_material);
+        rt::HostMesh example("data/exam.obj");
+        
+        host_scene.add_mesh(example, &triangle_material);
+       
         rt::DeviceScene device_scene;
-
+        
         device_scene.upload_scene(host_scene);
         
 
@@ -233,7 +235,7 @@ int main(int argc, char** argv) {
         rt::CudaRenderer renderer;
         rt::KernelData kernel_data;
 
-        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 2000, 10);
+        renderer.initialize(WINDOW_WIDTH, WINDOW_HEIGHT, 2000, 40);
 
         // Initialize the camera data for a one-shot CUDA PPM render.
         kernel_data.forward_vector = camera.get_forward_vector();
@@ -243,6 +245,7 @@ int main(int argc, char** argv) {
         kernel_data.viewport_dx = viewport.get_viewport_dx();
         kernel_data.viewport_dy = viewport.get_viewport_dy();
         kernel_data.position = camera.get_position();
+        
 
         if (ppm_mode){
             renderer.render_HD(device_scene.view(), kernel_data, host_pixels);
@@ -267,6 +270,7 @@ int main(int argc, char** argv) {
         float dt;
         while (!WindowShouldClose())
         {  
+            
             bool changed_position = false;
             dt = GetFrameTime();;
             Vector2 mouse_delta = GetMouseDelta();
